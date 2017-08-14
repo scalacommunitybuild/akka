@@ -714,6 +714,8 @@ final ActorRef throttler =
     .run(materializer);
 ```
 
+Note that when using `Sink.actorRef` the `sender()` will not be the original `sender()` of the messages that is sent to the `throttler` in the above examples. To define a valid `sender()` you can use `Sink.foreach` instead of `Sink.actorRef`. Inside `foreach` you can use ordinary `tell` to send the messages to the `target`. The `sender` parameter to `tell` can be a stable field or extracted from the elements in the stream. However, it must not access the `sender()` method of the enclosing actor if any, since foreach is run by the stream.
+
 ## Akka Typed
 
 With the new term @ref:[may change](../common/may-change.md) we will no longer have a different artifact for modules that are not

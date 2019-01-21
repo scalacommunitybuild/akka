@@ -12,7 +12,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.testkit.javadsl.EventFilter;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class FaultToleranceDocTest extends JUnitSuite {
   // #bubbling-example

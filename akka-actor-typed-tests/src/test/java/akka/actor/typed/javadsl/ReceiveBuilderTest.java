@@ -5,7 +5,7 @@
 package akka.actor.typed.javadsl;
 
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import akka.actor.typed.Behavior;
 

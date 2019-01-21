@@ -15,7 +15,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

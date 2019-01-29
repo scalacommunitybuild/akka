@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -15,7 +15,7 @@ import akka.annotation.ApiMayChange
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] {
+trait TypedActorContext[T] {
   // this should be a pure interface, i.e. only abstract methods
 
   /**

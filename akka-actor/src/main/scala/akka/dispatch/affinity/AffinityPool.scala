@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch.affinity
@@ -325,7 +325,7 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
   private val queueSelectorFactory: QueueSelectorFactory =
     prerequisites.dynamicAccess.createInstanceFor[QueueSelectorFactory](queueSelectorFactoryFQCN, immutable.Seq(classOf[Config] → config))
       .recover({
-        case exception ⇒ throw new IllegalArgumentException(
+        case _ ⇒ throw new IllegalArgumentException(
           s"Cannot instantiate QueueSelectorFactory(queueSelector = $queueSelectorFactoryFQCN), make sure it has an accessible constructor which accepts a Config parameter")
       }).get
 

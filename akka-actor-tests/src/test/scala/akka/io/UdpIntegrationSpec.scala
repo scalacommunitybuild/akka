@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -11,7 +11,7 @@ import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.io.Udp._
 import akka.io.Inet._
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddresses
 import java.net.DatagramSocket
 
 class UdpIntegrationSpec extends AkkaSpec("""

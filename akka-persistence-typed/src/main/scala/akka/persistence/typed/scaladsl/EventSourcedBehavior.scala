@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
+
+import scala.util.Try
 
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.annotation.DoNotInherit
 import akka.persistence._
-import akka.persistence.typed.{ EventAdapter, ExpectingReply, PersistenceId }
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal._
-
-import scala.util.Try
 
 object EventSourcedBehavior {
 
@@ -82,7 +84,7 @@ object EventSourcedBehavior {
 }
 
 /**
- * Further customization of the `PersistentBehavior` can be done with the methods defined here.
+ * Further customization of the `EventSourcedBehavior` can be done with the methods defined here.
  *
  * Not for user extension
  */

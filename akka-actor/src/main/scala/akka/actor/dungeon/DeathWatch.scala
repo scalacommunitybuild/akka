@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
 
-import akka.dispatch.sysmsg.{ Unwatch, Watch, DeathWatchNotification }
-import akka.event.Logging.{ Warning, Debug }
-import akka.actor.{ InternalActorRef, Address, Terminated, Actor, ActorRefScope, ActorCell, ActorRef, MinimalActorRef }
+import akka.dispatch.sysmsg.{ DeathWatchNotification, Unwatch, Watch }
+import akka.event.Logging.{ Debug, Warning }
+import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, MinimalActorRef, Terminated }
 import akka.event.AddressTerminatedTopic
+import akka.util.unused
 
 private[akka] trait DeathWatch { this: ActorCell ⇒
 
@@ -115,7 +116,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   //   when all actor references have uid, i.e. actorFor is removed
   private def removeFromMap[T](subject: ActorRef, map: Map[ActorRef, T]): Map[ActorRef, T] =
     if (subject.path.uid != ActorCell.undefinedUid) (map - subject) - new UndefinedUidActorRef(subject)
-    else map filterKeys (_.path != subject.path)
+    else (map filterKeys (_.path != subject.path)).toMap
 
   private def updateWatching(ref: InternalActorRef, newMessage: Option[Any]): Unit =
     watching = watching.updated(ref, newMessage)
@@ -159,7 +160,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       }
     }
 
-  protected def unwatchWatchedActors(actor: Actor): Unit =
+  protected def unwatchWatchedActors(@unused actor: Actor): Unit =
     if (!watching.isEmpty) {
       maintainAddressTerminatedSubscription() {
         try {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package typed.tutorial_5
@@ -17,11 +17,11 @@ class DeviceManagerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val managerActor = spawn(DeviceManager())
 
       managerActor ! RequestTrackDevice("group1", "device", probe.ref)
-      val registered1 = probe.expectMessageType[DeviceRegistered]
+      val registered1 = probe.receiveMessage()
 
       // another group
       managerActor ! RequestTrackDevice("group2", "device", probe.ref)
-      val registered2 = probe.expectMessageType[DeviceRegistered]
+      val registered2 = probe.receiveMessage()
 
       registered1.device should !==(registered2.device)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -115,7 +115,7 @@ class Dispatcher(
           executorService execute mbox
           true
         } catch {
-          case e: RejectedExecutionException ⇒
+          case _: RejectedExecutionException ⇒
             try {
               executorService execute mbox
               true

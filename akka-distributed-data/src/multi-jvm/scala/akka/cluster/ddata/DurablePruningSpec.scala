@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -16,6 +16,7 @@ import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import scala.concurrent.Await
 import akka.cluster.MemberStatus
+import akka.util.ccompat.imm._
 
 object DurablePruningSpec extends MultiNodeConfig {
   val first = role("first")
@@ -43,7 +44,8 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
 
   def startReplicator(sys: ActorSystem): ActorRef =
@@ -75,9 +77,9 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       Cluster(sys2).join(node(first).address)
       awaitAssert({
         Cluster(system).state.members.size should ===(4)
-        Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(system).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         Cluster(sys2).state.members.size should ===(4)
-        Cluster(sys2).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(sys2).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }, 10.seconds)
       enterBarrier("joined")
 
@@ -90,7 +92,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
         }
       }
 
-      replicator ! Update(KeyA, GCounter(), WriteLocal)(_ + 3)
+      replicator ! Update(KeyA, GCounter(), WriteLocal)(_ :+ 3)
       expectMsg(UpdateSuccess(KeyA, None))
 
       replicator2.tell(Update(KeyA, GCounter(), WriteLocal)(_.increment(cluster2, 2)), probe2.ref)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
@@ -85,7 +85,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       Await.result(behavior(()), timeout.duration) should ===(3)
     }
 
-    "enable delayed completition" in {
+    "enable delayed completion" in {
       val behavior = defaultBehavior
       val controlPromise = behavior.pushDelayed
       val f = behavior(())
@@ -96,7 +96,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(f.isCompleted)
     }
 
-    "log calls and parametrers" in {
+    "log calls and parameters" in {
       val logPromise = Promise[Int]()
       val behavior = new SwitchableLoggedBehavior[Int, Int]((i) ⇒ Future.successful(3), (i) ⇒ logPromise.success(i))
 

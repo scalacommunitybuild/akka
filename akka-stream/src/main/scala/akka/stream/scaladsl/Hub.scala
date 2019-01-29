@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -431,11 +431,12 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             addConsumer(consumer, startFrom)
             // in case the consumer is already stopped we need to undo registration
             implicit val ec = materializer.executionContext
-            consumer.callback.invokeWithFeedback(Initialize(startFrom)).onFailure {
+            consumer.callback.invokeWithFeedback(Initialize(startFrom)).failed.foreach {
               case _: StreamDetachedException ⇒
                 callbackPromise.future.foreach(callback ⇒
                   callback.invoke(UnRegister(consumer.id, startFrom, startFrom))
                 )
+              case _ ⇒ ()
             }
           }
 

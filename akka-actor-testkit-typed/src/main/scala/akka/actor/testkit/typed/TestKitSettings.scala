@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
@@ -10,13 +10,6 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.actor.typed.ActorSystem
-
-import scala.util.control.NoStackTrace
-
-/**
- * Exception without stack trace to use for verifying exceptions in tests
- */
-final case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
 object TestKitSettings {
   /**

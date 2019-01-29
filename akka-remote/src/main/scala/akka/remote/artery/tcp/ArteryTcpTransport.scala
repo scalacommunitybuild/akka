@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -7,6 +7,7 @@ package tcp
 
 import java.net.InetSocketAddress
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -41,10 +42,9 @@ import akka.stream.scaladsl.RestartFlow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
-import akka.stream.scaladsl.Tcp.IncomingConnection
 import akka.stream.scaladsl.Tcp.ServerBinding
-import akka.util.ByteString
-import akka.util.OptionVal
+import akka.util.{ ByteString, OptionVal }
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -242,7 +242,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     // If something in the inboundConnectionFlow fails, e.g. framing, the connection will be teared down,
     // but other parts of the inbound streams don't have to restarted.
-    def inboundConnectionFlow(inboundConnection: IncomingConnection): Flow[ByteString, ByteString, NotUsed] = {
+    def inboundConnectionFlow: Flow[ByteString, ByteString, NotUsed] = {
       // must create new Flow for each connection because of the FlightRecorder that can't be shared
       val afr = createFlightRecorderEventSink()
       Flow[ByteString]
@@ -279,7 +279,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
             afr.loFreq(
               TcpInbound_Connected,
               s"${connection.remoteAddress.getHostString}:${connection.remoteAddress.getPort}")
-            connection.handleWith(inboundConnectionFlow(connection))
+            connection.handleWith(inboundConnectionFlow)
           })
           .run()
           .recoverWith {
@@ -329,8 +329,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .toMat(inboundControlSink)({ case (a, (c, d)) ⇒ (a, c, d) })
         .run()(controlMaterializer)
     attachControlMessageObserver(ctrl)
-    implicit val ec: ExecutionContext = materializer.executionContext
-    updateStreamMatValues(ControlStreamId, completed)
+    updateStreamMatValues(completed)
 
     (hub, completed)
   }
@@ -364,9 +363,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { _ ⇒
+          (0 until inboundLanes).iterator.map { _ ⇒
             laneHub.toMat(lane)(Keep.right).run()(materializer)
-          }(collection.breakOut)
+          }.to(immutable.Vector)
 
         import system.dispatcher
 
@@ -380,7 +379,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     setInboundCompressionAccess(inboundCompressionAccess)
 
-    updateStreamMatValues(OrdinaryStreamId, completed)
+    updateStreamMatValues(completed)
 
     (inboundHub, completed)
   }
@@ -395,12 +394,12 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
         .run()(materializer)
 
-    updateStreamMatValues(LargeStreamId, completed)
+    updateStreamMatValues(completed)
 
     (hub, completed)
   }
 
-  private def updateStreamMatValues(streamId: Int, completed: Future[Done]): Unit = {
+  private def updateStreamMatValues(completed: Future[Done]): Unit = {
     implicit val ec: ExecutionContext = materializer.executionContext
     updateStreamMatValues(ControlStreamId, InboundStreamMatValues[NotUsed](
       NotUsed,

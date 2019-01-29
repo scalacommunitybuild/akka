@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
 import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddresses
 import Tcp._
 
 class CapacityLimitSpec extends AkkaSpec("""

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -152,7 +152,7 @@ private[akka] class Mailboxes(
     } else if (hasRequiredType(actorClass)) {
       try verifyRequirements(lookupByQueueType(getRequiredType(actorClass)))
       catch {
-        case NonFatal(thr) if (hasMailboxRequirement) ⇒ verifyRequirements(lookupByQueueType(mailboxRequirement))
+        case NonFatal(_) if (hasMailboxRequirement) ⇒ verifyRequirements(lookupByQueueType(mailboxRequirement))
       }
     } else if (hasMailboxRequirement) {
       verifyRequirements(lookupByQueueType(mailboxRequirement))

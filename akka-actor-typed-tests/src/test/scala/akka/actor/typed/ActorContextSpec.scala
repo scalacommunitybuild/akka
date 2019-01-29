@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -500,7 +500,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
           Behaviors.same
       }.decorate)
       actor ! "create"
-      val children = probe.expectMessageType[Children]
+      val children = probe.receiveMessage()
       actor ! "A"
       probe.expectMessage(Seq.empty)
       actor ! "all"
@@ -575,7 +575,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       }.decorate)
       val adapterName = "hello"
       actor ! adapterName
-      val adapter = probe.expectMessageType[ActorRef[String]]
+      val adapter = probe.receiveMessage()
       adapter.path.name should include(adapterName)
       adapter ! "message"
       messages.expectMessage(actor → "received message")
@@ -636,9 +636,9 @@ class InterceptActorContextSpec extends ActorContextSpec {
   import BehaviorInterceptor._
 
   def tap[T] = new BehaviorInterceptor[T, T] {
-    override def aroundReceive(context: ActorContext[T], message: T, target: ReceiveTarget[T]): Behavior[T] =
+    override def aroundReceive(context: TypedActorContext[T], message: T, target: ReceiveTarget[T]): Behavior[T] =
       target(context, message)
-    override def aroundSignal(context: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
+    override def aroundSignal(context: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
       target(context, signal)
   }
 

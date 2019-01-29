@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.persistence.typed;
@@ -8,15 +8,16 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.javadsl.*;
 
-public class AccountExample extends EventSourcedBehavior<AccountExample.AccountCommand, AccountExample.AccountEvent, AccountExample.Account> {
+public class AccountExample
+    extends EventSourcedBehavior<
+        AccountExample.AccountCommand, AccountExample.AccountEvent, AccountExample.Account> {
 
   interface AccountCommand {}
+
   public static class CreateAccount implements AccountCommand {}
+
   public static class Deposit implements AccountCommand {
     public final double amount;
 
@@ -24,6 +25,7 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
       this.amount = amount;
     }
   }
+
   public static class Withdraw implements AccountCommand {
     public final double amount;
 
@@ -31,10 +33,13 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
       this.amount = amount;
     }
   }
+
   public static class CloseAccount implements AccountCommand {}
 
   interface AccountEvent {}
+
   public static class AccountCreated implements AccountEvent {}
+
   public static class Deposited implements AccountEvent {
     public final double amount;
 
@@ -42,6 +47,7 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
       this.amount = amount;
     }
   }
+
   public static class Withdrawn implements AccountEvent {
     public final double amount;
 
@@ -49,10 +55,13 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
       this.amount = amount;
     }
   }
+
   public static class AccountClosed implements AccountEvent {}
 
   interface Account {}
+
   public static class EmptyAccount implements Account {}
+
   public static class OpenedAccount implements Account {
     public final double balance;
 
@@ -60,6 +69,7 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
       this.balance = balance;
     }
   }
+
   public static class ClosedAccount implements Account {}
 
   public static Behavior<AccountCommand> behavior(String accountNumber) {
@@ -75,61 +85,72 @@ public class AccountExample extends EventSourcedBehavior<AccountExample.AccountC
     return new EmptyAccount();
   }
 
-  private CommandHandlerBuilder<AccountCommand, AccountEvent, EmptyAccount, Account> initialHandler() {
-    return commandHandlerBuilder(EmptyAccount.class)
-      .matchCommand(CreateAccount.class, (__, cmd) -> Effect().persist(new AccountCreated()));
+  private CommandHandlerBuilderByState<AccountCommand, AccountEvent, EmptyAccount, Account>
+      initialCmdHandler() {
+    return newCommandHandlerBuilder()
+        .forStateType(EmptyAccount.class)
+        .matchCommand(CreateAccount.class, (__, cmd) -> Effect().persist(new AccountCreated()));
   }
 
-  private CommandHandlerBuilder<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountHandler() {
-    return commandHandlerBuilder(OpenedAccount.class)
-      .matchCommand(Deposit.class, (__, cmd) -> Effect().persist(new Deposited(cmd.amount)))
-      .matchCommand(Withdraw.class, (acc, cmd) -> {
-        if ((acc.balance - cmd.amount) < 0.0) {
-          return Effect().unhandled(); // TODO replies are missing in this example
-        } else {
-          return Effect().persist(new Withdrawn(cmd.amount))
-            .thenRun(acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
-              // we know this cast is safe, but somewhat ugly
-              OpenedAccount openAccount = (OpenedAccount) acc2;
-              // do some side-effect using balance
-              System.out.println(openAccount.balance);
+  private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account>
+      openedAccountCmdHandler() {
+    return newCommandHandlerBuilder()
+        .forStateType(OpenedAccount.class)
+        .matchCommand(Deposit.class, (__, cmd) -> Effect().persist(new Deposited(cmd.amount)))
+        .matchCommand(
+            Withdraw.class,
+            (acc, cmd) -> {
+              if ((acc.balance - cmd.amount) < 0.0) {
+                return Effect().unhandled(); // TODO replies are missing in this example
+              } else {
+                return Effect()
+                    .persist(new Withdrawn(cmd.amount))
+                    .thenRun(
+                        acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
+                          // we know this cast is safe, but somewhat ugly
+                          OpenedAccount openAccount = (OpenedAccount) acc2;
+                          // do some side-effect using balance
+                          System.out.println(openAccount.balance);
+                        });
+              }
+            })
+        .matchCommand(
+            CloseAccount.class,
+            (acc, cmd) -> {
+              if (acc.balance == 0.0) return Effect().persist(new AccountClosed());
+              else return Effect().unhandled();
             });
-        }
-      })
-      .matchCommand(CloseAccount.class, (acc, cmd) -> {
-        if (acc.balance == 0.0)
-          return Effect().persist(new AccountClosed());
-        else
-          return Effect().unhandled();
-        });
   }
 
-  private CommandHandlerBuilder<AccountCommand, AccountEvent, ClosedAccount, Account> closedHandler() {
-    return commandHandlerBuilder(ClosedAccount.class)
-        .matchCommand(AccountCommand.class, (__, ___) -> Effect().unhandled());
+  private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account>
+      closedCmdHandler() {
+    return newCommandHandlerBuilder()
+        .forStateType(ClosedAccount.class)
+        .matchCommand(AccountCommand.class, __ -> Effect().unhandled());
   }
 
   @Override
   public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
-    return initialHandler()
-      .orElse(openedAccountHandler())
-      .orElse(closedHandler())
-      .build();
+    return initialCmdHandler().orElse(openedAccountCmdHandler()).orElse(closedCmdHandler()).build();
+  }
+
+  private EventHandlerBuilderByState<EmptyAccount, Account, AccountEvent> initialEvtHandler() {
+    return newEventHandlerBuilder()
+        .forStateType(EmptyAccount.class)
+        .matchEvent(AccountCreated.class, () -> new OpenedAccount(0.0));
+  }
+
+  private EventHandlerBuilderByState<OpenedAccount, Account, AccountEvent>
+      openedAccountEvtHandler() {
+    return newEventHandlerBuilder()
+        .forStateType(OpenedAccount.class)
+        .matchEvent(Deposited.class, (acc, cmd) -> new OpenedAccount(acc.balance + cmd.amount))
+        .matchEvent(Withdrawn.class, (acc, cmd) -> new OpenedAccount(acc.balance - cmd.amount))
+        .matchEvent(AccountClosed.class, ClosedAccount::new);
   }
 
   @Override
   public EventHandler<Account, AccountEvent> eventHandler() {
-    return eventHandlerBuilder()
-      .matchEvent(AccountCreated.class, EmptyAccount.class, (__, ___) ->
-          new OpenedAccount(0.0))
-      .matchEvent(Deposited.class, OpenedAccount.class, (acc, cmd) ->
-          new OpenedAccount(acc.balance + cmd.amount))
-      .matchEvent(Withdrawn.class, OpenedAccount.class, (acc, cmd) ->
-          new OpenedAccount(acc.balance - cmd.amount))
-      .matchEvent(AccountClosed.class, OpenedAccount.class, (acc, cmd) ->
-          new ClosedAccount())
-    .build();
+    return initialEvtHandler().orElse(openedAccountEvtHandler()).build();
   }
-
-
 }

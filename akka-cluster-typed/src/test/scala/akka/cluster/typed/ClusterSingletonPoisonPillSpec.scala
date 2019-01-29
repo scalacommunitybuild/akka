@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -37,7 +37,7 @@ class ClusterSingletonPoisonPillSpec extends ScalaTestWithActorTestKit(ClusterSi
       val probe = TestProbe[ActorRef[Any]]
       val singleton = ClusterSingleton(system).init(SingletonActor(ClusterSingletonPoisonPillSpec.sneakyBehavior, "sneaky"))
       singleton ! GetSelf(probe.ref)
-      val singletonRef = probe.expectMessageType[ActorRef[Any]]
+      val singletonRef = probe.receiveMessage()
       singletonRef ! PoisonPill
       probe.expectTerminated(singletonRef, 1.second)
     }

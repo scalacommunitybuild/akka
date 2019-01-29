@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -205,7 +205,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       p3.expectMessage(Recovered)
       // stop it
       parent ! StopActor
-      val persistentActor = stopProbe.expectMessageType[ActorRef[Command]]
+      val persistentActor = stopProbe.receiveMessage()
       stopProbe.expectTerminated(persistentActor, 1.second)
 
       requestPermit(p4)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -21,6 +21,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
 import akka.Done
+import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 
@@ -118,6 +119,18 @@ object ShardRegion {
     def shardId(message: Any): String
   }
 
+  object HashCodeMessageExtractor {
+
+    /** INTERNAL API */
+    @InternalApi
+    private[sharding] def shardId(id: String, maxNumberOfShards: Int): String = {
+      // It would be better to have abs(id.hashCode % maxNumberOfShards), see issue #25034
+      // but to avoid getting different values when rolling upgrade we keep the old way,
+      // and it doesn't have any serious consequences
+      (math.abs(id.hashCode) % maxNumberOfShards).toString
+    }
+  }
+
   /**
    * Convenience implementation of [[ShardRegion.MessageExtractor]] that
    * construct `shardId` based on the `hashCode` of the `entityId`. The number
@@ -131,13 +144,10 @@ object ShardRegion {
 
     override def shardId(message: Any): String = {
       val id = message match {
-        case ShardRegion.StartEntity(id) ⇒ id
-        case _                           ⇒ entityId(message)
+        case ShardRegion.StartEntity(entityId) ⇒ entityId
+        case _                                 ⇒ entityId(message)
       }
-      // It would be better to have abs(id.hashCode % maxNumberOfShards), see issue #25034
-      // but to avoid getting different values when rolling upgrade we keep the old way,
-      // and it doesn't have any serious consequences
-      (math.abs(id.hashCode) % maxNumberOfShards).toString
+      HashCodeMessageExtractor.shardId(id, maxNumberOfShards)
     }
   }
 
@@ -580,15 +590,17 @@ private[akka] class ShardRegion(
 
   def receiveCommand(cmd: ShardRegionCommand): Unit = cmd match {
     case Retry ⇒
+      sendGracefulShutdownToCoordinator()
+
       if (shardBuffers.nonEmpty)
         retryCount += 1
       if (coordinator.isEmpty)
         register()
       else {
-        sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
-        tryCompleteGracefulShutdown()
       }
+
+      tryCompleteGracefulShutdown()
 
     case GracefulShutdown ⇒
       log.debug("Starting graceful shutdown of region and all its shards")

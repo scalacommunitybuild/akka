@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -752,7 +752,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * @return the number of bytes actually copied
    */
   // *must* be overridden by derived classes.
-  def copyToBuffer(buffer: ByteBuffer): Int = throw new UnsupportedOperationException("Method copyToBuffer is not implemented in ByteString")
+  def copyToBuffer(buffer: ByteBuffer): Int = throw new UnsupportedOperationException(
+    s"Method copyToBuffer is not implemented in ByteString, failed for buffer $buffer")
 
   /**
    * Create a new ByteString with all contents compacted into a single,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -20,6 +20,7 @@ import akka.dispatch.MessageDispatcher
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -109,7 +110,7 @@ private[akka] class RoutedActorCell(
       case group: Group ⇒
         val paths = group.paths(system)
         if (paths.nonEmpty)
-          addRoutees(paths.map(p ⇒ group.routeeFor(p, this))(collection.breakOut))
+          addRoutees(paths.iterator.map(p ⇒ group.routeeFor(p, this)).to(immutable.IndexedSeq))
       case _ ⇒
     }
     preSuperStart()

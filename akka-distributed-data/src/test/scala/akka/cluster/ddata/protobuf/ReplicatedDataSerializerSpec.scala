@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.protobuf
@@ -186,7 +186,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     }
 
     "serialize LWWRegister" in {
-      checkSerialization(LWWRegister(address1, "value1", LWWRegister.defaultClock))
+      checkSerialization(LWWRegister(address1, "value1", LWWRegister.defaultClock[String]))
       checkSerialization(LWWRegister(address1, "value2", LWWRegister.defaultClock[String])
         .withValue(address2, "value3", LWWRegister.defaultClock[String]))
     }

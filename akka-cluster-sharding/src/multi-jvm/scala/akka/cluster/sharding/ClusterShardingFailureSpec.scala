@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -22,6 +22,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
+import akka.util.ccompat.imm._
 
 object ClusterShardingFailureSpec {
   case class Get(id: String)
@@ -125,8 +126,8 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
       within(remaining) {
         awaitAssert {
-          cluster.state.members.map(_.uniqueAddress) should contain(cluster.selfUniqueAddress)
-          cluster.state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          cluster.state.members.unsorted.map(_.uniqueAddress) should contain(cluster.selfUniqueAddress)
+          cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         }
       }
     }

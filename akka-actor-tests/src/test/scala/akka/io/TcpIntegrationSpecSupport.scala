@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -9,7 +9,7 @@ import scala.collection.immutable
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddress
 import Tcp._
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
@@ -56,10 +56,10 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
       }
 
     /** allow overriding socket options for server side channel */
-    def bindOptions: immutable.Traversable[SocketOption] = Nil
+    def bindOptions: immutable.Iterable[SocketOption] = Nil
 
     /** allow overriding socket options for client side channel */
-    def connectOptions: immutable.Traversable[SocketOption] = Nil
+    def connectOptions: immutable.Iterable[SocketOption] = Nil
   }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal
@@ -7,13 +7,12 @@ package akka.cluster.typed.internal
 import akka.actor.typed.Props
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.{ ClusterEvent, MemberStatus }
+import akka.cluster.{ ClusterEvent, Member, MemberStatus }
 import akka.actor.typed.{ ActorRef, ActorSystem, Terminated }
 import akka.cluster.typed._
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.Member
 
 /**
  * INTERNAL API:
@@ -105,7 +104,7 @@ private[akka] object AdapterClusterImpl {
     }.narrow[ClusterStateSubscription]
   }
 
-  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((ctx, msg) ⇒
+  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((_, msg) ⇒
     msg match {
       case Join(address) ⇒
         adaptedCluster.join(address)

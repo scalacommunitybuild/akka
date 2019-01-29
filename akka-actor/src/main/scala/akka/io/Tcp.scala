@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -577,11 +577,11 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val MaxDirectBufferPoolSize: Int = getInt("direct-buffer-pool-limit")
     val RegisterTimeout: Duration = getString("register-timeout") match {
       case "infinite" ⇒ Duration.Undefined
-      case x          ⇒ _config.getMillisDuration("register-timeout")
+      case _          ⇒ _config.getMillisDuration("register-timeout")
     }
     val ReceivedMessageSizeLimit: Int = getString("max-received-message-size") match {
       case "unlimited" ⇒ Int.MaxValue
-      case x           ⇒ getIntBytes("max-received-message-size")
+      case _           ⇒ getIntBytes("max-received-message-size")
     }
     val ManagementDispatcher: String = getString("management-dispatcher")
     val FileIODispatcher: String = getString("file-io-dispatcher")
@@ -870,7 +870,7 @@ object TcpMessage {
    */
   def resumeAccepting(batchSize: Int): Command = ResumeAccepting(batchSize)
 
-  implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
+  implicit private def fromJava[T](coll: JIterable[T]): immutable.Iterable[T] = {
     akka.japi.Util.immutableSeq(coll)
   }
 }

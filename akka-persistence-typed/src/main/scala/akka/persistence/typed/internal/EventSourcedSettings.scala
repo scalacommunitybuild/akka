@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
 import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API

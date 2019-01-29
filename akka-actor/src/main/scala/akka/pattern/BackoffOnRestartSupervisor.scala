@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -41,7 +41,7 @@ private class BackoffOnRestartSupervisor(
         // Whatever the final Directive is, we will translate all Restarts
         // to our own Restarts, which involves stopping the child.
         case Restart ⇒
-          if (strategy.withinTimeRange.isFinite() && restartCount == 0) {
+          if (strategy.withinTimeRange.isFinite && restartCount == 0) {
             // If the user has defined a time range for the maxNrOfRetries, we'll schedule a message
             // to ourselves every time that range elapses, to reset the restart counter. We hide it
             // behind this conditional to avoid queuing the message unnecessarily

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -21,7 +21,7 @@ import akka.util.OptionVal
  * cluster events published on the event bus.
  */
 private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
 
   /**
    * Current state
@@ -56,7 +56,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       def receive = {
         case e: ClusterDomainEvent ⇒
           e match {
-            case SeenChanged(convergence, seenBy) ⇒
+            case SeenChanged(_, seenBy) ⇒
               _state = _state.copy(seenBy = seenBy)
             case ReachabilityChanged(reachability) ⇒
               _reachability = reachability

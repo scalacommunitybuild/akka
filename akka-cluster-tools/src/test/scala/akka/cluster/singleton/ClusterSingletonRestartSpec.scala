@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
@@ -43,10 +43,11 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       name = "echo")
 
     within(10.seconds) {
+      import akka.util.ccompat.imm._
       awaitAssert {
         Cluster(from) join Cluster(to).selfAddress
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
-        Cluster(from).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
     }
   }

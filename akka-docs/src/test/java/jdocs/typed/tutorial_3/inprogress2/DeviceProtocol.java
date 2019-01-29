@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_3.inprogress2;
@@ -8,11 +8,10 @@ import akka.actor.typed.ActorRef;
 
 import java.util.Optional;
 
-//#read-protocol-2
+// #read-protocol-2
 abstract class DeviceProtocol {
   // no instances of DeviceProtocol class
-  private DeviceProtocol() {
-  }
+  private DeviceProtocol() {}
 
   interface DeviceMessage {}
 
@@ -35,7 +34,5 @@ abstract class DeviceProtocol {
       this.value = value;
     }
   }
-
 }
-//#read-protocol-2
-
+// #read-protocol-2

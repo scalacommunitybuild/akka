@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -25,6 +25,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
 import scala.util.control.NoStackTrace
+import scala.collection.immutable
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 

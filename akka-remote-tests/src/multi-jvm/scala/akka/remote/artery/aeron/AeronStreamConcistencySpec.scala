@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
@@ -136,9 +137,7 @@ abstract class AeronStreamConsistencySpec
                 done.countDown()
             }
             pool.release(envelope)
-          }.onFailure {
-            case e ⇒ e.printStackTrace
-          }
+          }.failed.foreach { _.printStackTrace }
 
         within(10.seconds) {
           Source(1 to 100).map { _ ⇒

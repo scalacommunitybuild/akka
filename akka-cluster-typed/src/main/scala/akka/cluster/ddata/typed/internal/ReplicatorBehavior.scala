@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.internal
@@ -183,7 +183,7 @@ import akka.actor.typed.Terminated
           }
         }
           .receiveSignal {
-            case (ctx, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) ⇒
+            case (_, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) ⇒
               stopSubscribeAdapter(ref)
           }
       }

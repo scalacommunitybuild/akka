@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -12,6 +12,7 @@ import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.scaladsl._
 import scala.concurrent.Await
 import scala.concurrent.Future
+import scala.io.StdIn.readLine
 
 //#imports
 
@@ -155,7 +156,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       .filterNot(_.hashtags.contains(akkaTag)) // Remove all tweets containing #akka hashtag
       .map(_.hashtags) // Get all sets of hashtags ...
       .reduce(_ ++ _) // ... and reduce them to a single set, removing duplicates across all tweets
-      .mapConcat(identity) // Flatten the stream of tweets to a stream of hashtags
+      .mapConcat(identity) // Flatten the set of hashtags to a stream of hashtags
       .map(_.name.toUpperCase) // Convert all hashtags to upper case
       .runWith(Sink.foreach(println)) // Attach the Flow to a Sink that will finally print the hashtags
 

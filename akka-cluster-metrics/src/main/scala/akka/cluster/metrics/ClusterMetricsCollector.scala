@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -130,7 +130,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   import context.dispatcher
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler }
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
   val metrics = ClusterMetricsExtension(context.system)
   import metrics.settings._
 

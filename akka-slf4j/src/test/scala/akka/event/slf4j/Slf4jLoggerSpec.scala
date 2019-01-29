@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.slf4j
@@ -153,6 +153,14 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include regex (sourceThreadRegex)
       s should include("mdc=[ticket-#3671: Custom MDC Values]")
       s should include("msg=[Message with custom MDC values]")
+    }
+
+    "support null marker" in {
+      producer ! StringWithMarker("security-wise interesting message", null)
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("msg=[security-wise interesting message]")
     }
 
     "Support null values in custom MDC" in {

@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
 package scaladsl
 
 import scala.concurrent.Future
-import scala.collection.{ immutable ⇒ im }
 import scala.reflect.ClassTag
 
 import akka.util.Timeout
@@ -24,7 +23,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, StartEntity ⇒ UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
 import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
@@ -215,7 +214,7 @@ object Entity {
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
    * is very common and therefore [[EventSourcedEntity]] is provided as a convenience for creating such
-   * `PersistentBehavior`.
+   * `EventSourcedBehavior`.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)

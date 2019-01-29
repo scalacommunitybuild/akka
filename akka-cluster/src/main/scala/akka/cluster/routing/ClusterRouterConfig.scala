@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
@@ -90,7 +90,7 @@ final case class ClusterRouterGroupSettings(
     throw new IllegalArgumentException("routeesPaths must be defined")
 
   routeesPaths.foreach {
-    case RelativeActorPath(elements) ⇒ // good
+    case RelativeActorPath(_) ⇒ // good
     case p ⇒
       throw new IllegalArgumentException(s"routeesPaths [$p] is not a valid actor path without address information")
   }
@@ -354,11 +354,13 @@ private[akka] class ClusterRouterPoolActor(
       None
     } else {
       // find the node with least routees
-      val numberOfRouteesPerNode: Map[Address, Int] =
-        currentRoutees.foldLeft(currentNodes.map(_ → 0).toMap.withDefaultValue(0)) { (acc, x) ⇒
+      val numberOfRouteesPerNode: Map[Address, Int] = {
+        val nodeMap: Map[Address, Int] = currentNodes.map(_ → 0).toMap.withDefaultValue(0)
+        currentRoutees.foldLeft(nodeMap) { (acc, x) ⇒
           val address = fullAddress(x)
           acc + (address → (acc(address) + 1))
         }
+      }
 
       val (address, count) = numberOfRouteesPerNode.minBy(_._2)
       if (count < settings.maxInstancesPerNode) Some(address) else None
@@ -419,7 +421,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
       if (unusedNodes.nonEmpty) {
         Some((unusedNodes.head, settings.routeesPaths.head))
       } else {
-        val (address, used) = usedRouteePaths.minBy { case (address, used) ⇒ used.size }
+        val (address, used) = usedRouteePaths.minBy { case (_, used) ⇒ used.size }
         // pick next of the unused paths
         settings.routeesPaths.collectFirst { case p if !used.contains(p) ⇒ (address, p) }
       }

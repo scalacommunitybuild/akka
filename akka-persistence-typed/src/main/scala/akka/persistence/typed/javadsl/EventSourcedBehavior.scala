@@ -1,31 +1,35 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
 
-import java.util.function.Predicate
-import java.util.{ Collections, Optional }
+import java.util.Collections
+import java.util.Optional
+
+import scala.util.Failure
+import scala.util.Success
 
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior }
+import akka.actor.typed.BackoffSupervisorStrategy
+import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 import akka.persistence.SnapshotMetadata
-import akka.persistence.typed.{ EventAdapter, _ }
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
-import scala.util.{ Failure, Success }
-
 @ApiMayChange
-abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, onPersistFailure: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
   }
 
-  def this(persistenceId: PersistenceId, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
-    this(persistenceId, Optional.ofNullable(backoffSupervisorStrategy))
+  def this(persistenceId: PersistenceId, onPersistFailure: BackoffSupervisorStrategy) = {
+    this(persistenceId, Optional.ofNullable(onPersistFailure))
   }
 
   /**
@@ -33,8 +37,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    *
    * Return effects from your handlers in order to instruct persistence on how to act on the incoming message (i.e. persist events).
    */
-  protected final def Effect: EffectFactories[Command, Event, State] =
-    EffectFactories.asInstanceOf[EffectFactories[Command, Event, State]]
+  protected final def Effect: EffectFactories[Event, State] =
+    EffectFactories.asInstanceOf[EffectFactories[Event, State]]
 
   /**
    * Implement by returning the initial empty state object.
@@ -65,25 +69,14 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    */
   protected def eventHandler(): EventHandler[State, Event]
 
-  /**
-   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
-   * @return A new, mutable, command handler builder
-   */
-  protected final def commandHandlerBuilder[S <: State](stateClass: Class[S]): CommandHandlerBuilder[Command, Event, S, State] =
-    CommandHandlerBuilder.builder[Command, Event, S, State](stateClass)
-
-  /**
-   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
-   *                       *                       useful for example when state type is an Optional
-   * @return A new, mutable, command handler builder
-   */
-  protected final def commandHandlerBuilder(statePredicate: Predicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
-    CommandHandlerBuilder.builder[Command, Event, State](statePredicate)
+  protected final def newCommandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
+    CommandHandlerBuilder.builder[Command, Event, State]()
+  }
 
   /**
    * @return A new, mutable, event handler builder
    */
-  protected final def eventHandlerBuilder(): EventHandlerBuilder[State, Event] =
+  protected final def newEventHandlerBuilder(): EventHandlerBuilder[State, Event] =
     EventHandlerBuilder.builder[State, Event]()
 
   /**
@@ -137,7 +130,7 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
   /**
    * INTERNAL API: DeferredBehavior init
    */
-  @InternalApi override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
+  @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
 
     val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
       val n = snapshotEvery()
@@ -178,8 +171,8 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
       .eventAdapter(eventAdapter())
       .onRecoveryFailure(onRecoveryFailure)
 
-    if (supervisorStrategy.isPresent)
-      behavior.onPersistFailure(supervisorStrategy.get)
+    if (onPersistFailure.isPresent)
+      behavior.onPersistFailure(onPersistFailure.get)
     else
       behavior
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
-import akka.stream.impl._
+import akka.stream.impl.{ LinearTraversalBuilder, ProcessorModule, Timers, SubFlowImpl, TraversalBuilder, Throttle, fusing }
 import akka.stream.impl.fusing._
 import akka.stream.stage._
 import akka.util.{ ConstantFun, Timeout }

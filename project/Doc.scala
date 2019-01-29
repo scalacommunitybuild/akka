@@ -1,11 +1,11 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import sbt._
-import sbtunidoc.BaseUnidocPlugin.autoImport.{unidoc, unidocProjectFilter}
+import sbtunidoc.BaseUnidocPlugin.autoImport.{unidoc, unidocProjectFilter, unidocAllSources}
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 import sbtunidoc.GenJavadocPlugin.autoImport._
@@ -61,7 +61,10 @@ object Scaladoc extends AutoPlugin {
           if (name.endsWith(".html") && !name.startsWith("index-") &&
             !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
-            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            val hd = try source.getLines().exists(lines =>
+              lines.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
+              lines.contains("<svg id=\"graph")
+            )
             catch {
               case e: Exception ⇒ throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()
@@ -112,7 +115,7 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"))).getOrElse(Nil)
+    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none", "--frames", "--ignore-source-errors"))).getOrElse(Nil)
 
   override lazy val projectSettings = {
     def unidocRootProjectFilter(ignoreProjects: Seq[ProjectReference]): ProjectFilter = 
@@ -121,7 +124,13 @@ object UnidocRoot extends AutoPlugin {
     inTask(unidoc)(Seq(
       unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
       unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value))
+      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value) ++
+      UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
+        // akka.stream.scaladsl.GraphDSL.Implicits.ReversePortsOps contains code that
+        // genjavadoc turns into (probably incorrect) Java code that in turn confuses the javadoc tool.
+        unidocAllSources in JavaUnidoc ~= { v => v.map(_.filterNot(_.getAbsolutePath.endsWith("scaladsl/GraphDSL.java"))) },
+      )).getOrElse(Nil)
+    )
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
 import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 object Serialization {
 
@@ -188,8 +189,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     Try {
       val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
-          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in synch between the two systems.")
+          s"Cannot find serializer with id [$serializerId]${clazz.map(c ⇒ " (class [" + c.getName + "])").getOrElse("")}. " +
+            "The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in sync between the two systems.")
       }
       withTransportInformation { () ⇒
         serializer.fromBinary(bytes, clazz).asInstanceOf[T]
@@ -205,8 +207,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     Try {
       val serializer = try getSerializerById(serializerId) catch {
         case _: NoSuchElementException ⇒ throw new NotSerializableException(
-          s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
-            "akka.actor.serializers is not in synch between the two systems.")
+          s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
+            "akka.actor.serializers is not in sync between the two systems.")
       }
       deserializeByteArray(bytes, serializer, manifest)
     }
@@ -234,7 +236,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                     val classManifestOption: Option[Class[_]] = Some(classManifest)
                     updateCache(cache, manifest, classManifestOption)
                     s1.fromBinary(bytes, classManifestOption)
-                  case Failure(e) ⇒
+                  case Failure(_) ⇒
                     throw new NotSerializableException(
                       s"Cannot find manifest class [$manifest] for serializer with id [${serializer.identifier}].")
                 }
@@ -253,7 +255,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   def deserializeByteBuffer(buf: ByteBuffer, serializerId: Int, manifest: String): AnyRef = {
     val serializer = try getSerializerById(serializerId) catch {
       case _: NoSuchElementException ⇒ throw new NotSerializableException(
-        s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
+        s"Cannot find serializer with id [$serializerId] (manifest [$manifest]). The most probable reason is that the configuration entry " +
           "akka.actor.serializers is not in synch between the two systems.")
     }
 
@@ -375,6 +377,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     system.dynamicAccess.createInstanceFor[Serializer](fqn, List(classOf[ExtendedActorSystem] → system)) recoverWith {
       case _: NoSuchMethodException ⇒
         system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil)
+      // FIXME only needed on 2.13.0-M5 due to https://github.com/scala/bug/issues/11242
+      case t ⇒ Failure(t)
     }
   }
 
@@ -400,7 +404,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private val serializers: Map[String, Serializer] = {
     val fromConfig = for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
     val result = fromConfig ++ serializerDetails.map(d ⇒ d.alias → d.serializer)
-    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }(collection.breakOut))
+    ensureOnlyAllowedSerializers(result.iterator.map { case (_, ser) ⇒ ser })
     result
   }
 
@@ -419,7 +423,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
     val result = sort(fromConfig ++ fromSettings)
-    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }(collection.breakOut))
+    ensureOnlyAllowedSerializers(result.iterator.map { case (_, ser) ⇒ ser })
     result
   }
 
@@ -441,20 +445,20 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * obeying any order between unrelated subtypes (insert sort).
    */
   private def sort(in: Iterable[ClassSerializer]): immutable.Seq[ClassSerializer] =
-    ((new ArrayBuffer[ClassSerializer](in.size) /: in) { (buf, ca) ⇒
+    (in.foldLeft(new ArrayBuffer[ClassSerializer](in.size)) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }).to[immutable.Seq]
+    }).to(immutable.Seq)
 
   /**
    * serializerMap is a Map whose keys is the class that is serializable and values is the serializer
    * to be used for that class.
    */
   private val serializerMap: ConcurrentHashMap[Class[_], Serializer] =
-    (new ConcurrentHashMap[Class[_], Serializer] /: bindings) { case (map, (c, s)) ⇒ map.put(c, s); map }
+    bindings.foldLeft(new ConcurrentHashMap[Class[_], Serializer]) { case (map, (c, s)) ⇒ map.put(c, s); map }
 
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)

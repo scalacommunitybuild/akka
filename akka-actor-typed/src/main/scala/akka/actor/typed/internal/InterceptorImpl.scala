@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
 import akka.actor.typed
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
+import akka.actor.typed.LogOptions.LogOptionsImpl
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, PreRestart, Signal }
+import akka.actor.typed.{ LogOptions, _ }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
 
@@ -39,26 +40,26 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   import BehaviorInterceptor._
 
   private val preStartTarget: PreStartTarget[I] = new PreStartTarget[I] {
-    override def start(ctx: ActorContext[_]): Behavior[I] = {
-      Behavior.start[I](nestedBehavior, ctx.asInstanceOf[ActorContext[I]])
+    override def start(ctx: TypedActorContext[_]): Behavior[I] = {
+      Behavior.start[I](nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]])
     }
   }
 
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
-    override def apply(ctx: ActorContext[_], msg: I): Behavior[I] =
-      Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], msg)
+    override def apply(ctx: TypedActorContext[_], msg: I): Behavior[I] =
+      Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], msg)
 
-    override def signalRestart(ctx: ActorContext[_]): Unit =
-      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], PreRestart)
+    override def signalRestart(ctx: TypedActorContext[_]): Unit =
+      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], PreRestart)
   }
 
   private val signalTarget = new SignalTarget[I] {
-    override def apply(ctx: ActorContext[_], signal: Signal): Behavior[I] =
-      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], signal)
+    override def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] =
+      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], signal)
   }
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
-  def preStart(ctx: typed.ActorContext[O]): Behavior[O] = {
+  def preStart(ctx: typed.TypedActorContext[O]): Behavior[O] = {
     val started = interceptor.aroundStart(ctx, preStartTarget)
     deduplicate(started, ctx)
   }
@@ -66,20 +67,25 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   override def replaceNested(newNested: Behavior[I]): Behavior[O] =
     new InterceptorImpl(interceptor, newNested)
 
-  override def receive(ctx: typed.ActorContext[O], msg: O): Behavior[O] = {
-    val interceptedResult = interceptor.aroundReceive(ctx, msg, receiveTarget)
-    deduplicate(interceptedResult, ctx)
+  override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
+    val interceptMessageType = interceptor.interceptMessageType
+    val result =
+      if (interceptMessageType == null || interceptMessageType.isAssignableFrom(msg.getClass))
+        interceptor.aroundReceive(ctx, msg, receiveTarget)
+      else
+        receiveTarget.apply(ctx, msg.asInstanceOf[I])
+    deduplicate(result, ctx)
   }
 
-  override def receiveSignal(ctx: typed.ActorContext[O], signal: Signal): Behavior[O] = {
+  override def receiveSignal(ctx: typed.TypedActorContext[O], signal: Signal): Behavior[O] = {
     val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
     deduplicate(interceptedResult, ctx)
   }
 
-  private def deduplicate(interceptedResult: Behavior[I], ctx: ActorContext[O]): Behavior[O] = {
-    val started = Behavior.start(interceptedResult, ctx.asInstanceOf[ActorContext[I]])
+  private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
+    val started = Behavior.start(interceptedResult, ctx.asInstanceOf[TypedActorContext[I]])
     if (started == UnhandledBehavior || started == SameBehavior || !Behavior.isAlive(started)) {
-      started.asInstanceOf[Behavior[O]]
+      started.unsafeCast[O]
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
       val duplicateInterceptExists = Behavior.existsInStack(started) {
@@ -87,7 +93,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
         case _ ⇒ false
       }
 
-      if (duplicateInterceptExists) started.asInstanceOf[Behavior[O]]
+      if (duplicateInterceptExists) started.unsafeCast[O]
       else new InterceptorImpl[O, I](interceptor, started)
     }
   }
@@ -104,12 +110,12 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) extends BehaviorInterceptor[T, T] {
   import BehaviorInterceptor._
 
-  override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     actorRef ! msg
     target(ctx, msg)
   }
 
-  override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     target(ctx, signal)
   }
 
@@ -119,6 +125,35 @@ private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) exte
     case _                              ⇒ false
   }
 
+}
+
+/**
+ * Log all messages for this decorated ReceiveTarget[T] to logger before receiving it ourselves.
+ *
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) extends BehaviorInterceptor[T, T] {
+
+  import BehaviorInterceptor._
+
+  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+    if (opts.enabled)
+      opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received message {}", msg)
+    target(ctx, msg)
+  }
+
+  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+    if (opts.enabled)
+      opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received signal {}", signal)
+    target(ctx, signal)
+  }
+
+  // only once in the same behavior stack
+  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
+    case LogMessagesInterceptor(`opts`) ⇒ true
+    case _                              ⇒ false
+  }
 }
 
 /**
@@ -150,7 +185,7 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
     case _ ⇒ false
   }
 
-  def aroundReceive(ctx: ActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
+  def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
     // widen would wrap the TimerMessage, which would be wrong, see issue #25318
     msg match {
       case t: TimerMsg ⇒ throw new IllegalArgumentException(
@@ -164,7 +199,7 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
     }
   }
 
-  def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] =
+  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] =
     target(ctx, signal)
 
   override def toString: String = s"Widen(${LineNumbers(matcher)})"

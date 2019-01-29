@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
@@ -10,10 +10,8 @@ import akka.util.OptionVal
 /**
  * DNS Record Type
  */
-@ApiMayChange
 final case class RecordType(code: Short, name: String)
 
-@ApiMayChange
 object RecordType {
   /**
    * array for fast lookups by id

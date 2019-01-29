@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -116,8 +116,8 @@ class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingleton
       clusterNode1.manager ! Join(clusterNode1.selfMember.address)
       clusterNode2.manager ! Join(clusterNode1.selfMember.address)
 
-      node1UpProbe.expectMessageType[SelfUp]
-      node2UpProbe.expectMessageType[SelfUp]
+      node1UpProbe.receiveMessage()
+      node2UpProbe.receiveMessage()
 
       val cs1: ClusterSingleton = ClusterSingleton(system)
       val cs2 = ClusterSingleton(adaptedSystem2)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -20,7 +20,7 @@ object TailChoppingSpec {
       def receive = {
         case "stop"  ⇒ context.stop(self)
         case "times" ⇒ sender() ! times
-        case x ⇒
+        case _ ⇒
           times += 1
           Thread sleep sleepTime.toMillis
           sender ! "ack"
@@ -99,7 +99,7 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
 
       probe.send(routedActor, "")
       probe.expectMsgPF() {
-        case Failure(timeoutEx: AskTimeoutException) ⇒
+        case Failure(_: AskTimeoutException) ⇒
       }
 
       allShouldEqual(1, actor1, actor2)(ref ⇒ Await.result(ref ? "times", timeout.duration))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -205,7 +205,7 @@ case class DefaultResizer(
               case threshold  ⇒ cell.numberOfMessages >= threshold
             }
         }
-      case x ⇒
+      case _ ⇒
         false
     }
   }

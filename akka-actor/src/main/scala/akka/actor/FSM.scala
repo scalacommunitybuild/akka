@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -7,12 +7,12 @@ package akka.actor
 import language.implicitConversions
 import scala.concurrent.duration.Duration
 import scala.collection.mutable
-import akka.routing.{ Deafen, Listen, Listeners }
-
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+
+import akka.routing.{ Deafen, Listen, Listeners }
 import akka.annotation.InternalApi
-import akka.util.JavaDurationConverters
+import akka.util.{ JavaDurationConverters, unused }
 
 object FSM {
 
@@ -607,7 +607,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * unhandled event handler
    */
   private val handleEventDefault: StateFunction = {
-    case Event(value, stateData) ⇒
+    case Event(value, _) ⇒
       log.warning("unhandled event " + value + " in state " + stateName)
       stay
   }
@@ -678,7 +678,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     processEvent(event, source)
   }
 
-  private[akka] def processEvent(event: Event, source: AnyRef): Unit = {
+  private[akka] def processEvent(event: Event, @unused source: AnyRef): Unit = {
     val stateFunc = stateFunctions(currentState.stateName)
     val nextState = if (stateFunc isDefinedAt event) {
       stateFunc(event)

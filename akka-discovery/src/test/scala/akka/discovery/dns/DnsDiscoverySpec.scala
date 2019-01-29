@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery.dns
@@ -78,7 +78,7 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
       val result = discovery.lookup(name, resolveTimeout = 500.milliseconds).futureValue
       result.serviceName shouldEqual name
       result.addresses.toSet shouldEqual Set(
-        ResolvedTarget("192.168.1.20", None)
+        ResolvedTarget("192.168.1.20", None, Some(InetAddress.getByName("192.168.1.20")))
       )
     }
 

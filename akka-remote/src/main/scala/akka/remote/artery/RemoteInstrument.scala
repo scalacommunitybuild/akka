@@ -1,15 +1,18 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
+import java.nio.ByteBuffer
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.util.OptionVal
-import java.nio.ByteBuffer
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
+import akka.util.{ OptionVal, unused }
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -287,15 +290,15 @@ private[remote] object RemoteInstruments {
   def getKey(kl: Int): Byte = (kl >>> 26).toByte
   def getLength(kl: Int): Int = kl & lengthMask
 
-  def create(system: ExtendedActorSystem, log: LoggingAdapter): Vector[RemoteInstrument] = {
+  def create(system: ExtendedActorSystem, @unused log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
     import scala.collection.JavaConverters._
-    c.getStringList(path).asScala.map { fqcn ⇒
+    c.getStringList(path).asScala.iterator.map { fqcn ⇒
       system
         .dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, Nil)
         .orElse(system.dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] → system)))
         .get
-    }(collection.breakOut)
+    }.to(immutable.Vector)
   }
 }

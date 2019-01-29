@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -89,6 +89,20 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       }
     }
 
+    "fails if all dns clients fail" in {
+      val dnsClient1 = TestProbe()
+      val dnsClient2 = TestProbe()
+      val r = resolver(List(dnsClient1.ref, dnsClient2.ref))
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      dnsClient1.expectMsg(Question4(1, "cats.com"))
+      dnsClient1.reply(Failure(new RuntimeException("Fail")))
+      dnsClient2.expectMsg(Question4(2, "cats.com"))
+      dnsClient2.reply(Failure(new RuntimeException("Yet another fail")))
+      expectMsgPF(remainingOrDefault) {
+        case Failure(ResolveFailedException(_)) ⇒
+      }
+    }
+
     "gets SRV records if requested" in {
       val dnsClient1 = TestProbe()
       val dnsClient2 = TestProbe()
@@ -145,6 +159,8 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       """
           nameservers = ["one","two"]
           resolve-timeout = 25ms
+          search-domains = []
+          ndots = 1
         """))
     system.actorOf(Props(new AsyncDnsResolver(settings, new AsyncDnsCache(), (arf, l) ⇒ {
       clients

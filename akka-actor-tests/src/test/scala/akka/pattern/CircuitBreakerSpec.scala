@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -658,7 +658,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter with MockitoSugar 
     "reset failure count after success" in {
       val breaker = CircuitBreakerSpec.multiFailureCb()
       breaker().withCircuitBreaker(Future(sayHi))
-      for (n ← 1 to 4) breaker().withCircuitBreaker(Future(throwException))
+      for (_ ← 1 to 4) breaker().withCircuitBreaker(Future(throwException))
       awaitCond(breaker().currentFailureCount == 4, awaitTimeout)
       breaker().withCircuitBreaker(Future(sayHi))
       awaitCond(breaker().currentFailureCount == 0, awaitTimeout)

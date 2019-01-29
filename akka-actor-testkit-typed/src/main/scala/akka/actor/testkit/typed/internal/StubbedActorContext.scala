@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
@@ -126,7 +126,7 @@ private[akka] final class FunctionRef[-T](
 /**
  * INTERNAL API
  *
- * An [[ActorContext]] for synchronous execution of a [[Behavior]] that
+ * A [[TypedActorContext]] for synchronous execution of a [[Behavior]] that
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  */

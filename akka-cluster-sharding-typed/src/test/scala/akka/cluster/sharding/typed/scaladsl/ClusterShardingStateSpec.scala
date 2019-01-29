@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.scaladsl
@@ -53,7 +53,7 @@ class ClusterShardingStateSpec extends ScalaTestWithActorTestKit(ClusterSharding
 
       //#get-region-state
       ClusterSharding(system).shardState ! GetShardRegionState(typeKey, probe.ref)
-      val state = probe.expectMessageType[CurrentShardRegionState]
+      val state = probe.receiveMessage()
       //#get-region-state
       state.shards should be(Set(ShardState(shardExtractor.shardId("id1"), Set("id1"))))
     }

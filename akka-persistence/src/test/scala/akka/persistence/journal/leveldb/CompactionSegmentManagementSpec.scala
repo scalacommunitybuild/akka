@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
@@ -58,7 +58,7 @@ class CompactionSegmentManagementSpec extends WordSpec {
       val compactionStub = new CompactionSegmentManagement {
         override def compactionIntervals: Map[String, Long] = intervals
       }
-      val expectedIntervals = namedIntervals + ("persistence_id-3" → 3L, "persistence_id-4" → 3L)
+      val expectedIntervals = namedIntervals + "persistence_id-3" → 3L + "persistence_id-4" → 3L
 
       for ((id, interval) ← expectedIntervals) {
         var segment = 0

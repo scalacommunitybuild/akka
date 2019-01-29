@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -66,7 +66,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
 
       spawn(snitch, "snitch", Props.empty.withDispatcherFromConfig("snitch-dispatcher"))
 
-      val pong = probe.expectMessageType[Pong]
+      val pong = probe.receiveMessage()
 
       pong.selfName should ===("snitch1")
       pong.threadName should startWith("ActorContextAskSpec-snitch-dispatcher")

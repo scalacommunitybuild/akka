@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.jul
@@ -14,6 +14,7 @@ import akka.event.EventStream
 import akka.event.LoggerMessageQueueSemantics
 import akka.event.Logging._
 import akka.event.LoggingFilter
+import akka.util.unused
 
 /**
  * `java.util.logging` logger.
@@ -88,7 +89,7 @@ object Logger {
  * backend configuration to filter log events before publishing
  * the log events to the `eventStream`.
  */
-class JavaLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
+class JavaLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
   import Logger.mapLevel
 
   def isErrorEnabled(logClass: Class[_], logSource: String) =

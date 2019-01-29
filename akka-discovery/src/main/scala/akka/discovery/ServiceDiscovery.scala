@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery
@@ -9,19 +9,26 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 
-import akka.actor.DeadLetterSuppression
-import akka.annotation.ApiMayChange
-
 import scala.collection.immutable
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
-@ApiMayChange
+import akka.actor.DeadLetterSuppression
+import akka.util.HashCode
+
 object ServiceDiscovery {
 
+  object Resolved {
+    def apply(serviceName: String, addresses: immutable.Seq[ResolvedTarget]): Resolved =
+      new Resolved(serviceName, addresses)
+
+    def unapply(resolved: Resolved): Option[(String, immutable.Seq[ResolvedTarget])] =
+      Some((resolved.serviceName, resolved.addresses))
+  }
+
   /** Result of a successful resolve request */
-  final case class Resolved(serviceName: String, addresses: immutable.Seq[ResolvedTarget])
+  final class Resolved(val serviceName: String, val addresses: immutable.Seq[ResolvedTarget])
     extends DeadLetterSuppression {
 
     /**
@@ -31,6 +38,21 @@ object ServiceDiscovery {
       import scala.collection.JavaConverters._
       addresses.asJava
     }
+
+    override def toString: String = s"Resolved($serviceName,$addresses)"
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: Resolved ⇒ serviceName == other.serviceName && addresses == other.addresses
+      case _               ⇒ false
+    }
+
+    override def hashCode(): Int = {
+      var result = HashCode.SEED
+      result = HashCode.hash(result, serviceName)
+      result = HashCode.hash(result, addresses)
+      result
+    }
+
   }
 
   object ResolvedTarget {
@@ -43,8 +65,13 @@ object ServiceDiscovery {
       (t.address, t.host, t.port)
     }
 
-    def apply(host: String, port: Option[Int]): ResolvedTarget =
-      ResolvedTarget(host, port, Try(InetAddress.getByName(host)).toOption)
+    /**
+     * @param host the hostname or the IP address of the target
+     * @param port optional port number
+     * @param address IP address of the target. This is used during cluster bootstap when available.
+     */
+    def apply(host: String, port: Option[Int], address: Option[InetAddress]): ResolvedTarget =
+      new ResolvedTarget(host, port, address)
   }
 
   /**
@@ -53,27 +80,39 @@ object ServiceDiscovery {
    * @param port optional port number
    * @param address optional IP address of the target. This is used during cluster bootstap when available.
    */
-  final case class ResolvedTarget(
-    host:    String,
-    port:    Option[Int],
-    address: Option[InetAddress]
+  final class ResolvedTarget(
+    val host:    String,
+    val port:    Option[Int],
+    val address: Option[InetAddress]
   ) {
 
     /**
      * Java API
      */
-    def getPort: Optional[Int] = {
-      import scala.compat.java8.OptionConverters._
+    def getPort: Optional[Int] =
       port.asJava
-    }
 
     /**
      * Java API
      */
-    def getAddress: Optional[InetAddress] = {
-      import scala.compat.java8.OptionConverters._
+    def getAddress: Optional[InetAddress] =
       address.asJava
+
+    override def toString: String = s"ResolvedTarget($host,$port,$address)"
+
+    override def equals(obj: Any): Boolean = obj match {
+      case other: ResolvedTarget ⇒ host == other.host && port == other.port && address == other.address
+      case _                     ⇒ false
     }
+
+    override def hashCode(): Int = {
+      var result = HashCode.SEED
+      result = HashCode.hash(result, host)
+      result = HashCode.hash(result, port)
+      result = HashCode.hash(result, address)
+      result
+    }
+
   }
 
 }
@@ -84,9 +123,15 @@ object ServiceDiscovery {
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
  *
+ * @throws IllegalArgumentException if [[serviceName]] is 'null' or an empty String
  */
-@ApiMayChange
-final case class Lookup(serviceName: String, portName: Option[String], protocol: Option[String]) {
+final class Lookup(
+  val serviceName: String,
+  val portName:    Option[String],
+  val protocol:    Option[String]) {
+
+  require(serviceName != null, "'serviceName' cannot be null")
+  require(serviceName.trim.nonEmpty, "'serviceName' cannot be empty")
 
   /**
    * Which port for a service e.g. Akka remoting or HTTP.
@@ -99,9 +144,42 @@ final case class Lookup(serviceName: String, portName: Option[String], protocol:
    * Maps to "protocol" for SRV records.
    */
   def withProtocol(value: String): Lookup = copy(protocol = Some(value))
+
+  /**
+   * Java API
+   */
+  def getPortName: Optional[String] =
+    portName.asJava
+
+  /**
+   * Java API
+   */
+  def getProtocol: Optional[String] =
+    protocol.asJava
+
+  private def copy(
+    serviceName: String         = serviceName,
+    portName:    Option[String] = portName,
+    protocol:    Option[String] = protocol): Lookup =
+    new Lookup(serviceName, portName, protocol)
+
+  override def toString: String = s"Lookup($serviceName,$portName,$protocol)"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Lookup ⇒ serviceName == other.serviceName && portName == other.portName && protocol == other.protocol
+    case _             ⇒ false
+  }
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, serviceName)
+    result = HashCode.hash(result, portName)
+    result = HashCode.hash(result, protocol)
+    result
+  }
+
 }
 
-@ApiMayChange
 case object Lookup {
 
   /**
@@ -112,6 +190,12 @@ case object Lookup {
   def apply(serviceName: String): Lookup = new Lookup(serviceName, None, None)
 
   /**
+   * Create a service Lookup with `serviceName`, optional `portName` and optional `protocol`.
+   */
+  def apply(serviceName: String, portName: Option[String], protocol: Option[String]): Lookup =
+    new Lookup(serviceName, portName, protocol)
+
+  /**
    * Java API
    *
    * Create a service Lookup with only a serviceName.
@@ -119,13 +203,53 @@ case object Lookup {
    * and protocol
    */
   def create(serviceName: String): Lookup = new Lookup(serviceName, None, None)
+
+  private val SrvQuery = """^_(.+?)\._(.+?)\.(.+?)$""".r
+
+  private val DomainName = "^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{2,6}$".r
+
+  /**
+   * Create a service Lookup from a string with format:
+   * _portName._protocol.serviceName.
+   * (as specified by https://www.ietf.org/rfc/rfc2782.txt)
+   *
+   * If the passed string conforms with this format, a SRV Lookup is returned.
+   * The serviceName part must be a valid domain name.
+   *
+   * The string is parsed and dismembered to build a Lookup as following:
+   * Lookup(serviceName).withPortName(portName).withProtocol(protocol)
+   *
+   *
+   * @throws NullPointerException If the passed string is null
+   * @throws IllegalArgumentException If the string doesn't not conform with the SRV format
+   */
+  def parseSrv(str: String): Lookup =
+    str match {
+      case SrvQuery(portName, protocol, serviceName) if validDomainName(serviceName) ⇒
+        Lookup(serviceName).withPortName(portName).withProtocol(protocol)
+
+      case null ⇒ throw new NullPointerException("Unable to create Lookup from passed SRV string. Passed value is 'null'")
+      case _    ⇒ throw new IllegalArgumentException(s"Unable to create Lookup from passed SRV string, invalid format: $str")
+    }
+
+  /**
+   * Returns true if passed string conforms with SRV format. Otherwise returns false.
+   */
+  def isValidSrv(srv: String): Boolean =
+    srv match {
+      case SrvQuery(_, _, serviceName) ⇒ validDomainName(serviceName)
+      case _                           ⇒ false
+    }
+
+  private def validDomainName(name: String): Boolean =
+    DomainName.pattern.asPredicate().test(name)
+
 }
 
 /**
  * Implement to provide a service discovery method
  *
  */
-@ApiMayChange
 abstract class ServiceDiscovery {
 
   import ServiceDiscovery._

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -8,7 +8,7 @@ package scaladsl
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.internal._
 
-import scala.reflect.ClassTag
+import scala.reflect.{ ClassTag, classTag }
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -158,6 +158,22 @@ object Behaviors {
     BehaviorImpl.intercept(new MonitorInterceptor[T](monitor))(behavior)
 
   /**
+   * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
+   * [[akka.actor.typed.LogOptions]] default configuration before invoking the wrapped behavior.
+   * To include an MDC context then first wrap `logMessages` with `withMDC`.
+   */
+  def logMessages[T](behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.intercept(new LogMessagesInterceptor[T](LogOptions()))(behavior)
+
+  /**
+   * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
+   * [[akka.actor.typed.LogOptions]] configuration before invoking the wrapped behavior.
+   * To include an MDC context then first wrap `logMessages` with `withMDC`.
+   */
+  def logMessages[T](logOptions: LogOptions, behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.intercept(new LogMessagesInterceptor[T](logOptions))(behavior)
+
+  /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for
    * the given exception.
    * Exceptions that are not subtypes of `Thr` will not be
@@ -184,13 +200,12 @@ object Behaviors {
   def supervise[T](wrapped: Behavior[T]): Supervise[T] =
     new Supervise[T](wrapped)
 
-  private final val NothingClassTag = ClassTag(classOf[Nothing])
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
-      val tag = implicitly[ClassTag[Thr]]
-      val effectiveTag = if (tag == NothingClassTag) ThrowableClassTag else tag
+      val tag = classTag[Thr]
+      val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
       Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }
   }
@@ -254,7 +269,7 @@ object Behaviors {
    * signal reception behavior. It's returned by for example [[Behaviors.receiveMessage]].
    */
   @DoNotInherit
-  trait Receive[T] extends ExtensibleBehavior[T] {
+  trait Receive[T] extends Behavior[T] {
     def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T]
   }
 

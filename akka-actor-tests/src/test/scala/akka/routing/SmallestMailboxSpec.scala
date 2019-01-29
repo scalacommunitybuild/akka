@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -26,7 +26,7 @@ class SmallestMailboxSpec extends AkkaSpec("akka.actor.serialize-messages = off"
           case (msg: Int, receivedLatch: TestLatch) ⇒
             usedActors.put(msg, self.path.toString)
             receivedLatch.countDown()
-          case s: String ⇒
+          case _: String ⇒
         }
       })))
 

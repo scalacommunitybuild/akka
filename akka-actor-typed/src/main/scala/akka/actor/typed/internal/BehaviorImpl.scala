@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -7,7 +7,7 @@ package internal
 
 import akka.util.{ LineNumbers }
 import akka.annotation.InternalApi
-import akka.actor.typed.{ ActorContext ⇒ AC }
+import akka.actor.typed.{ TypedActorContext ⇒ AC }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
 
 /**

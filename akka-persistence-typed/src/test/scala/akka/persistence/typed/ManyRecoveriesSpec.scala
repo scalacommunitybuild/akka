@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed
@@ -86,7 +86,7 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
 
       latch.countDown()
 
-      forN(100)(_ ⇒ probe.expectMessageType[String]) should
+      forN(100)(_ ⇒ probe.receiveMessage()) should
         be(forN(100)(i ⇒ s"a$i-B"))
     }
   }

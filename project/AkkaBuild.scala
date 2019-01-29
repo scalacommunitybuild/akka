@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -28,7 +28,7 @@ object AkkaBuild {
     Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.5.19"
+      version in ThisBuild := "2.5.20"
     )
 
   lazy val mayChangeSettings = Seq(
@@ -93,6 +93,12 @@ object AkkaBuild {
     Protobuf.settings ++ Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= DefaultScalacOptions,
+      // On 2.13, adding -Ywarn-unused breaks 'sbt ++2.13.0-M5 akka-actor/doc'
+      // https://github.com/akka/akka/issues/26119
+      scalacOptions in Compile --= (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) => Seq("-Ywarn-unused")
+        case _             => Seq.empty
+      }),
       // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
       // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
@@ -126,6 +132,16 @@ object AkkaBuild {
       javacOptions in doc ++= Seq(),
 
       crossVersion := CrossVersion.binary,
+
+      // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
+      // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
+      unmanagedSourceDirectories in Compile += {
+        val sourceDir = (sourceDirectory in Compile).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+          case _                       => sourceDir / "scala-2.13-"
+        }
+      },
 
       ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
@@ -222,7 +238,7 @@ object AkkaBuild {
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= Seq("-Xdoclint:none"))
+    javacOptions in doc ++= Seq("-Xdoclint:none", "--ignore-source-errors"))
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._

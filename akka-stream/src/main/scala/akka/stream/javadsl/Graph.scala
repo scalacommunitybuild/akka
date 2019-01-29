@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -13,7 +13,9 @@ import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
-import akka.stream.scaladsl.GenericGraph
+import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
+import akka.stream.Attributes
+import akka.stream.impl.TraversalBuilder
 
 /**
  * Merge several streams, taking elements as they arrive from input streams

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -56,7 +56,7 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
   extends AutoDownBase(autoDownUnreachableAfter) with ActorLogging {
 
   val cluster = Cluster(context.system)
-  import cluster.InfoLogger._
+  import cluster.ClusterLogger._
 
   override def selfAddress = cluster.selfAddress
 

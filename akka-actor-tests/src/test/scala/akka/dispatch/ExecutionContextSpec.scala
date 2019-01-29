@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
 import java.util.concurrent.{ ExecutorService, Executor, Executors }
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent._
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
+import scala.concurrent.{ Await, blocking, Promise, Future }
 import scala.concurrent.duration._
 import akka.testkit.{ TestLatch, AkkaSpec, DefaultTimeout }
 import akka.util.SerializedSuspendableExecutionContext

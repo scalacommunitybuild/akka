@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -115,6 +115,26 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 cannot reach b1 so only option is c1
+      gossipTo should ===(Vector[UniqueAddress](cDc1))
+    }
+
+    "select among unreachable nodes if marked as unreachable by someone else" in {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
+        override protected def preferNodesWithDifferentView(s: MembershipState): Boolean = false
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1),
+          overview = GossipOverview(
+            reachability = Reachability.empty.unreachable(aDc1, bDc1).unreachable(bDc1, cDc1))),
+        aDc1,
+        aDc1.dataCenter,
+        crossDcConnections = 5)
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // a1 marked b as unreachable so will not pick b
+      // b marked c as unreachable so that is ok as target
       gossipTo should ===(Vector[UniqueAddress](cDc1))
     }
 

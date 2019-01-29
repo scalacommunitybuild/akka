@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -62,7 +62,7 @@ object TestActor {
     override def sender: ActorRef = throw IllegalActorStateException("last receive did not dequeue a message")
   }
 
-  val FALSE = (x: Any) ⇒ false
+  val FALSE = (_: Any) ⇒ false
 
   /** INTERNAL API */
   private[TestActor] class DelegatingSupervisorStrategy extends SupervisorStrategy {
@@ -734,7 +734,7 @@ trait TestKitBase {
           case RealMessage(o, _) if (f isDefinedAt o) ⇒
             msg = lastMessage
             doit(f(o) :: acc, count + 1)
-          case RealMessage(o, _) ⇒
+          case RealMessage(_, _) ⇒
             queue.offerFirst(lastMessage)
             lastMessage = msg
             acc.reverse

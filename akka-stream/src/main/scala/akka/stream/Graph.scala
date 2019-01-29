@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
+import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -67,4 +68,17 @@ trait Graph[+S <: Shape, +M] {
    * less specific than attributes set directly on the individual graphs of the composite.
    */
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
+}
+
+/**
+ * INTERNAL API
+ *
+ * Allows creating additional API on top of an existing Graph by extending from this class and
+ * accessing the delegate
+ */
+@InternalApi
+private[stream] abstract class GraphDelegate[+S <: Shape, +Mat](delegate: Graph[S, Mat]) extends Graph[S, Mat] {
+  final override def shape: S = delegate.shape
+  final override private[stream] def traversalBuilder: TraversalBuilder = delegate.traversalBuilder
+  final override def withAttributes(attr: Attributes): Graph[S, Mat] = delegate.withAttributes(attr)
 }

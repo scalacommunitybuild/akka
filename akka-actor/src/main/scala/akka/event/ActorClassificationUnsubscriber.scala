@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -7,6 +7,8 @@ package akka.event
 import akka.actor._
 import akka.event.Logging.simpleName
 import java.util.concurrent.atomic.AtomicInteger
+
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -32,7 +34,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassific
       atSeq = nextSeq
       unstashAll()
 
-    case reg: Register ⇒
+    case _: Register ⇒
       stash()
 
     case Unregister(actor, seq) if seq == nextSeq ⇒
@@ -41,7 +43,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassific
       atSeq = nextSeq
       unstashAll()
 
-    case unreg: Unregister ⇒
+    case _: Unregister ⇒
       stash()
 
     case Terminated(actor) ⇒
@@ -65,7 +67,7 @@ private[akka] object ActorClassificationUnsubscriber {
   final case class Register(actor: ActorRef, seq: Int)
   final case class Unregister(actor: ActorRef, seq: Int)
 
-  def start(system: ActorSystem, bus: ManagedActorClassification, debug: Boolean = false) = {
+  def start(system: ActorSystem, bus: ManagedActorClassification, @unused debug: Boolean = false) = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system.asInstanceOf[ExtendedActorSystem]
       .systemActorOf(props(bus, debug), "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())

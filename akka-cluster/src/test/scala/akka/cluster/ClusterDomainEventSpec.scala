@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -37,7 +37,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
   val selfDummyAddress = UniqueAddress(Address("akka.tcp", "sys", "selfDummy", 2552), 17L)
 
   private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
-    ((gossip, Set.empty[UniqueAddress]) /: gossip.members) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
+    gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }
 
   private def state(g: Gossip): MembershipState =
     state(g, selfDummyAddress)

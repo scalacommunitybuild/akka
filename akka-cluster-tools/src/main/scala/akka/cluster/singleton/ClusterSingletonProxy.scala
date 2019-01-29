@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
@@ -286,7 +286,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
         case Some(s) ⇒
           if (log.isDebugEnabled)
             log.debug(
-              "Forwarding message of type [{}] to current singleton instance at [{}]: {}",
+              "Forwarding message of type [{}] to current singleton instance at [{}]",
               Logging.simpleName(msg.getClass), s.path)
           s forward msg
         case None ⇒

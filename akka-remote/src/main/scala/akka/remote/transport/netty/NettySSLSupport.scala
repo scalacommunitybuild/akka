@@ -1,14 +1,13 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
 
-import java.security._
-
 import akka.japi.Util._
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -26,7 +25,7 @@ private[akka] class SSLSettings(config: Config) {
 
   val SSLTrustStorePassword = getString("trust-store-password")
 
-  val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to[Set]
+  val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to(Set)
 
   val SSLProtocol = getString("protocol")
 

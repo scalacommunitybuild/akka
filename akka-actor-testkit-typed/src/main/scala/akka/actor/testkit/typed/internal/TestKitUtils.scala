@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
@@ -21,6 +21,7 @@ private[akka] object ActorTestKitGuardian {
   final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
   final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
   final case class StopActor[T](ref: ActorRef[T], replyTo: ActorRef[Ack.type]) extends TestKitCommand
+  final case class ActorStopped[T](replyTo: ActorRef[Ack.type]) extends TestKitCommand
 
   final case object Ack
 
@@ -32,7 +33,10 @@ private[akka] object ActorTestKitGuardian {
       reply ! context.spawnAnonymous(behavior, props)
       Behaviors.same
     case (context, StopActor(ref, reply)) ⇒
+      context.watchWith(ref, ActorStopped(reply))
       context.stop(ref)
+      Behaviors.same
+    case (_, ActorStopped(reply)) ⇒
       reply ! Ack
       Behaviors.same
   }

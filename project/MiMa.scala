@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -11,7 +11,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 18
+  private val latestPatchOf25 = 19
   private val latestPatchOf24 = 20
 
   override def requires = MimaPlugin

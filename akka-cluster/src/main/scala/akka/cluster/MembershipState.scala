@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -11,9 +11,9 @@ import scala.collection.SortedSet
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 import scala.annotation.tailrec
-import scala.collection.breakOut
 import scala.util.Random
 
 /**
@@ -168,11 +168,13 @@ import scala.util.Random
   def isInSameDc(node: UniqueAddress): Boolean =
     node == selfUniqueAddress || latestGossip.member(node).dataCenter == selfDc
 
+  /**
+   * Never gossip to self and not to node marked as unreachable by self (heartbeat
+   * messages are not getting through so no point in trying to gossip).
+   * Nodes marked as unreachable by others are still valid targets for gossip.
+   */
   def validNodeForGossip(node: UniqueAddress): Boolean =
-    node != selfUniqueAddress &&
-      ((isInSameDc(node) && isReachableExcludingDownedObservers(node)) ||
-        // if cross DC we need to check pairwise unreachable observation
-        overview.reachability.isReachable(selfUniqueAddress, node))
+    node != selfUniqueAddress && overview.reachability.isReachable(selfUniqueAddress, node)
 
   def youngestMember: Member = {
     val mbrs = dcMembers
@@ -273,10 +275,10 @@ import scala.util.Random
       if (preferNodesWithDifferentView(state)) {
         // If it's time to try to gossip to some nodes with a different view
         // gossip to a random alive same dc member with preference to a member with older gossip version
-        latestGossip.members.collect {
+        latestGossip.members.iterator.collect {
           case m if m.dataCenter == state.selfDc && !latestGossip.seenByNode(m.uniqueAddress) && state.validNodeForGossip(m.uniqueAddress) ⇒
             m.uniqueAddress
-        }(breakOut)
+        }.to(Vector)
       } else Vector.empty
 
     // Fall back to localGossip

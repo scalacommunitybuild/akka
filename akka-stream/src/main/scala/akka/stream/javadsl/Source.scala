@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -8,6 +8,7 @@ import java.util
 import java.util.Optional
 
 import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.annotation.ApiMayChange
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
@@ -39,6 +40,11 @@ object Source {
    * for every connected `Sink`.
    */
   def empty[O](): Source[O, NotUsed] = _empty.asInstanceOf[Source[O, NotUsed]]
+
+  /**
+   * Create a `Source` with no elements. The result is the same as calling `Source.<O>empty()`
+   */
+  def empty[T](clazz: Class[T]): Source[T, NotUsed] = empty[T]()
 
   /**
    * Create a `Source` which materializes a [[java.util.concurrent.CompletableFuture]] which controls what element
@@ -394,7 +400,7 @@ object Source {
    * call when buffer is full.
    *
    * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueue.watchCompletion]].
-   * It returns future that completes with success when stream is completed or fail when stream is failed.
+   * It returns a future that completes with success when this operator is completed or fails when stream is failed.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
    * for downstream demand unless there is another message waiting for downstream demand, in that case
@@ -3461,4 +3467,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def log(name: String): javadsl.Source[Out, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * API MAY CHANGE
+   */
+  @ApiMayChange
+  def startContextPropagation[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Ctx, Out, Mat] =
+    new scaladsl.SourceWithContext(this.asScala.map(x ⇒ (x, extractContext.apply(x)))).asJava
 }

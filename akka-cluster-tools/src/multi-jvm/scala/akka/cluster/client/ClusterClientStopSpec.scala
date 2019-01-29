@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.client
 
-import akka.actor.{ Actor, Props, Terminated }
+import akka.actor.{ Actor, Props }
 import akka.cluster.Cluster
 import akka.cluster.pubsub.{ DistributedPubSub, DistributedPubSubMediator }
 import akka.remote.testconductor.RoleName

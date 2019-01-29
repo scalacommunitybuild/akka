@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -37,6 +37,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val ignore: Set[String] =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
       Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
+      Set("productElementName", "productElementNames") ++
       Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
       Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 

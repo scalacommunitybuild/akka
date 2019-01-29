@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
@@ -215,6 +215,12 @@ final class Source[+Out, +Mat](
 
       combineRest(2, rest.iterator)
     })
+
+  /**
+   * API MAY CHANGE
+   */
+  @ApiMayChange
+  def startContextPropagation[Ctx](f: Out ⇒ Ctx): SourceWithContext[Ctx, Out, Mat] = new SourceWithContext(this.map(e ⇒ (e, f(e))))
 }
 
 object Source {
@@ -609,7 +615,7 @@ object Source {
    * call when buffer is full.
    *
    * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueue.watchCompletion]].
-   * It returns future that completes with success when stream is completed or fail when stream is failed.
+   * It returns future that completes with success when the operator is completed or fails when the stream is failed.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
    * for downstream demand unless there is another message waiting for downstream demand, in that case

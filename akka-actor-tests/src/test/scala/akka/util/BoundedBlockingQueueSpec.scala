@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -136,14 +136,14 @@ class BoundedBlockingQueueSpec
       }
 
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
+      events.toList should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("b"))
     }
   }
 
   "take" must {
     "call the backing queue if not empty" in {
-      val TestContext(queue, events, _, _, _, backingQueue) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       queue.take()
 
@@ -151,7 +151,7 @@ class BoundedBlockingQueueSpec
     }
 
     "signal notFull when taking an element" in {
-      val TestContext(queue, events, _, _, _, backingQueue) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       queue.take()
       events should contain(signalNotFull)
@@ -196,7 +196,7 @@ class BoundedBlockingQueueSpec
 
       // `f` should still block since the queue is still empty
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
+      events.toList should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
       events shouldNot contain(poll)
     }
   }
@@ -259,7 +259,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return false if the timeout is exceeded" in {
-      val TestContext(queue, events, _, notFull, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.put("Hello")
       queue.offer("World", 100, TimeUnit.MILLISECONDS) should equal(false)
       events shouldNot contain(offer("World"))
@@ -297,7 +297,7 @@ class BoundedBlockingQueueSpec
 
       // `f` should still block since the queue is still empty
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
+      events.toList should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("World"))
     }
   }
@@ -315,7 +315,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return the first element inserted" in {
-      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(2)
+      val TestContext(queue, _, _, _, _, _) = newBoundedBlockingQueue(2)
       queue.put("Hello")
       queue.put("World")
       queue.poll() should equal("Hello")
@@ -360,14 +360,14 @@ class BoundedBlockingQueueSpec
     }
 
     "immediately poll the backing queue" in {
-      val TestContext(queue, events, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
 
       queue.poll(100, TimeUnit.MILLISECONDS)
       events should contain(poll)
     }
 
     "return null if the timeout is exceeded" in {
-      val TestContext(queue, events, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
+      val TestContext(queue, _, notEmpty, _, _, _) = newBoundedBlockingQueue(1)
 
       queue.poll(100, TimeUnit.MILLISECONDS) should equal(null)
     }
@@ -402,7 +402,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return true if the element was removed" in {
-      val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(2)
+      val TestContext(queue, _, _, _, _, _) = newBoundedBlockingQueue(2)
       queue.put("Hello")
       queue.remove("Hello") should equal(true)
     }
@@ -428,7 +428,7 @@ class BoundedBlockingQueueSpec
     }
 
     "return true if the backing queue contains the element" in {
-      val TestContext(queue, events, _, _, _, backingQueue) = newBoundedBlockingQueue(2)
+      val TestContext(queue, _, _, _, _, backingQueue) = newBoundedBlockingQueue(2)
       backingQueue.offer("Hello")
       queue.contains("Hello") should equal(true)
     }
@@ -706,12 +706,12 @@ trait QueueSetupHelper {
 
   import akka.util.QueueTestEvents._
 
-  case class TestContext(queue: BoundedBlockingQueue[String], events: mutable.MutableList[QueueEvent], notEmpty: TestCondition, notFull: TestCondition, lock: ReentrantLock, backingQueue: util.Queue[String])
+  case class TestContext(queue: BoundedBlockingQueue[String], events: mutable.Buffer[QueueEvent], notEmpty: TestCondition, notFull: TestCondition, lock: ReentrantLock, backingQueue: util.Queue[String])
 
   /**
    * Backing queue that records all poll and offer calls in `events`
    */
-  class TestBackingQueue(events: mutable.MutableList[QueueEvent])
+  class TestBackingQueue(events: mutable.Buffer[QueueEvent])
     extends util.LinkedList[String] {
 
     override def poll(): String = {
@@ -733,7 +733,7 @@ trait QueueSetupHelper {
   /**
    * Reentrant lock condition that records when the condition is signaled or `await`ed.
    */
-  class TestCondition(events: mutable.MutableList[QueueEvent], condition: Condition, signalEvent: QueueEvent, awaitEvent: QueueEvent)
+  class TestCondition(events: mutable.Buffer[QueueEvent], condition: Condition, signalEvent: QueueEvent, awaitEvent: QueueEvent)
     extends Condition {
 
     case class Manual(waitTime: Long = 0, waitingThread: Option[Thread] = None)
@@ -757,7 +757,7 @@ trait QueueSetupHelper {
       }
     }
 
-    def manualTimeControl(on: Boolean): Unit =
+    def manualTimeControl(@unused on: Boolean): Unit =
       waiting = Some(Manual())
 
     override def signalAll(): Unit = condition.signalAll()
@@ -774,7 +774,7 @@ trait QueueSetupHelper {
         try {
           this.await()
         } catch {
-          case e: InterruptedException ⇒
+          case _: InterruptedException ⇒
         }
         waitTime
       }
@@ -798,7 +798,7 @@ trait QueueSetupHelper {
   }
 
   def newBoundedBlockingQueue(maxCapacity: Int): TestContext = {
-    val events: mutable.MutableList[QueueEvent] = new mutable.MutableList()
+    val events: mutable.Buffer[QueueEvent] = new mutable.ArrayBuffer()
 
     val realLock = new ReentrantLock(false)
     val wrappedNotEmpty = new TestCondition(events, realLock.newCondition(), signalNotEmpty, awaitNotEmpty)

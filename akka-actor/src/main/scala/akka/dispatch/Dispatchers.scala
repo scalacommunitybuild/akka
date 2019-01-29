@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -286,7 +286,7 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
 
   private val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
     case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
-    case other ⇒
+    case _ ⇒
       prerequisites.eventStream.publish(
         Warning(
           "PinnedDispatcherConfigurator",

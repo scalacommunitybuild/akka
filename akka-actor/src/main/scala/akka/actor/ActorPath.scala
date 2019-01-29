@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -177,7 +177,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * Recursively create a descendant’s path by appending all child names.
    */
-  def /(child: Iterable[String]): ActorPath = (this /: child)((path, elem) ⇒ if (elem.isEmpty) path else path / elem)
+  def /(child: Iterable[String]): ActorPath = child.foldLeft(this)((path, elem) ⇒ if (elem.isEmpty) path else path / elem)
 
   /**
    * Java API: Recursively create a descendant’s path by appending all child names.
@@ -281,7 +281,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override def compareTo(other: ActorPath): Int = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString // FIXME make this cheaper by comparing address and name in isolation
-    case c: ChildActorPath ⇒ 1
+    case _: ChildActorPath ⇒ 1
   }
 
   /**
@@ -315,7 +315,7 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
   override def elements: immutable.Iterable[String] = {
     @tailrec
     def rec(p: ActorPath, acc: List[String]): immutable.Iterable[String] = p match {
-      case r: RootActorPath ⇒ acc
+      case _: RootActorPath ⇒ acc
       case _                ⇒ rec(p.parent, p.name :: acc)
     }
     rec(this, Nil)

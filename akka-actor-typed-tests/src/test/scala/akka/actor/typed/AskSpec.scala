@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -85,7 +85,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val noSuchActor: ActorRef[Msg] = system match {
         case adaptedSys: ActorSystemAdapter[_] ⇒
           import akka.actor.typed.scaladsl.adapter._
-          adaptedSys.untyped.provider.resolveActorRef("/foo/bar")
+          adaptedSys.untypedSystem.provider.resolveActorRef("/foo/bar")
         case _ ⇒
           fail("this test must only run in an adapted actor system")
       }

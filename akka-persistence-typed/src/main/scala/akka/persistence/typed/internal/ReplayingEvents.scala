@@ -1,23 +1,25 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
 
+import scala.util.control.NonFatal
+import scala.util.control.NoStackTrace
+
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
-import akka.actor.typed.internal.PoisonPill
-
-import scala.util.control.NonFatal
+import akka.persistence.typed.internal.ReplayingEvents.FailureWhileUnstashing
 
 /***
  * INTERNAL API
  *
- * Third (of four) behavior of an PersistentBehavior.
+ * Third (of four) behavior of an EventSourcedBehavior.
  *
  * In this behavior we finally start replaying events, beginning from the last applied sequence number
  * (i.e. the one up-until-which the snapshot recovery has brought us).
@@ -29,10 +31,10 @@ import scala.util.control.NonFatal
  * See previous behavior [[ReplayingSnapshot]].
  */
 @InternalApi
-private[persistence] object ReplayingEvents {
+private[akka] object ReplayingEvents {
 
   @InternalApi
-  private[persistence] final case class ReplayingState[State](
+  private[akka] final case class ReplayingState[State](
     seqNr:               Long,
     state:               State,
     eventSeenInInterval: Boolean,
@@ -46,13 +48,15 @@ private[persistence] object ReplayingEvents {
   ): Behavior[InternalProtocol] =
     new ReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
 
+  private final case class FailureWhileUnstashing(cause: Throwable) extends Exception(cause) with NoStackTrace
+
 }
 
 @InternalApi
-private[persistence] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S])
+private[akka] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
-  import ReplayingEvents.ReplayingState
   import InternalProtocol._
+  import ReplayingEvents.ReplayingState
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
@@ -104,6 +108,7 @@ private[persistence] class ReplayingEvents[C, E, S](override val setup: Behavior
           Behaviors.unhandled
       }
     } catch {
+      case FailureWhileUnstashing(ex) ⇒ throw ex
       case NonFatal(cause) ⇒
         onRecoveryFailure(cause, state.seqNr, None)
     }
@@ -116,7 +121,7 @@ private[persistence] class ReplayingEvents[C, E, S](override val setup: Behavior
         "Discarding message [{}], because actor is to be stopped", cmd)
       Behaviors.unhandled
     } else {
-      stash(cmd)
+      stashInternal(cmd)
       Behaviors.same
     }
   }
@@ -171,15 +176,19 @@ private[persistence] class ReplayingEvents[C, E, S](override val setup: Behavior
     tryReturnRecoveryPermit("replay completed successfully")
     setup.recoveryCompleted(state.state)
 
-    if (state.receivedPoisonPill && isStashEmpty)
+    if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
       Behaviors.stopped
     else {
       val running = Running[C, E, S](
         setup,
-        Running.EventsourcedState[S](state.seqNr, state.state, state.receivedPoisonPill)
+        Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill)
       )
 
-      tryUnstash(running)
+      try {
+        tryUnstashOne(running)
+      } catch {
+        case NonFatal(t) ⇒ throw FailureWhileUnstashing(t)
+      }
     }
   } finally {
     setup.cancelRecoveryTimer()

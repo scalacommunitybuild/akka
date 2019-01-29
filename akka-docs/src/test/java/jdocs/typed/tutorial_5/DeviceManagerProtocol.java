@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_5;
@@ -59,17 +59,18 @@ abstract class DeviceManagerProtocol {
     }
   }
 
-  //#query-protocol
+  // #query-protocol
   interface DeviceGroupQueryMessage {}
 
   public static final class RequestAllTemperatures
-       implements DeviceGroupQueryMessage, DeviceGroupMessage, DeviceManagerMessage {
+      implements DeviceGroupQueryMessage, DeviceGroupMessage, DeviceManagerMessage {
 
     final long requestId;
     final String groupId;
     final ActorRef<RespondAllTemperatures> replyTo;
 
-    public RequestAllTemperatures(long requestId, String groupId, ActorRef<RespondAllTemperatures> replyTo) {
+    public RequestAllTemperatures(
+        long requestId, String groupId, ActorRef<RespondAllTemperatures> replyTo) {
       this.requestId = requestId;
       this.groupId = groupId;
       this.replyTo = replyTo;
@@ -86,8 +87,7 @@ abstract class DeviceManagerProtocol {
     }
   }
 
-  public static interface TemperatureReading {
-  }
+  public static interface TemperatureReading {}
 
   public static final class Temperature implements TemperatureReading {
     public final double value;
@@ -114,9 +114,7 @@ abstract class DeviceManagerProtocol {
 
     @Override
     public String toString() {
-      return "Temperature{" +
-        "value=" + value +
-        '}';
+      return "Temperature{" + "value=" + value + '}';
     }
   }
 
@@ -131,6 +129,6 @@ abstract class DeviceManagerProtocol {
   public enum DeviceTimedOut implements TemperatureReading {
     INSTANCE
   }
-  //#query-protocol
+  // #query-protocol
 
 }

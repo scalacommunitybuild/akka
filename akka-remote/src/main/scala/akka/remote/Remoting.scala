@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -28,6 +28,7 @@ import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -106,7 +107,7 @@ private[remote] object Remoting {
 
   private[Remoting] class TransportSupervisor extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     override def supervisorStrategy = OneForOneStrategy() {
-      case NonFatal(e) ⇒ Restart
+      case NonFatal(_) ⇒ Restart
     }
 
     def receive = {
@@ -327,7 +328,7 @@ private[remote] object EndpointManager {
     def registerWritableEndpointUid(remoteAddress: Address, uid: Int): Unit = {
       addressToWritable.get(remoteAddress) match {
         case Some(Pass(ep, _)) ⇒ addressToWritable += remoteAddress → Pass(ep, Some(uid))
-        case other             ⇒
+        case _                 ⇒
       }
     }
 
@@ -482,7 +483,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   override val supervisorStrategy = {
     def hopeless(e: HopelessAssociation): SupervisorStrategy.Directive = e match {
-      case HopelessAssociation(localAddress, remoteAddress, Some(uid), reason) ⇒
+      case HopelessAssociation(_, remoteAddress, Some(uid), reason) ⇒
         log.error(reason, "Association to [{}] with UID [{}] irrecoverably failed. Quarantining address.",
           remoteAddress, uid)
         settings.QuarantineDuration match {
@@ -493,7 +494,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         }
         Stop
 
-      case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
+      case HopelessAssociation(_, remoteAddress, None, _) ⇒
         keepQuarantinedOr(remoteAddress) {
           log.warning(
             "Association to [{}] with unknown UID is irrecoverably failed. " +
@@ -505,7 +506,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     }
 
     OneForOneStrategy(loggingEnabled = false) {
-      case e @ InvalidAssociation(localAddress, remoteAddress, reason, disassiciationInfo) ⇒
+      case InvalidAssociation(localAddress, remoteAddress, reason, disassiciationInfo) ⇒
         keepQuarantinedOr(remoteAddress) {
           val causedBy = if (reason.getCause == null) "" else s"Caused by: [${reason.getCause.getMessage}]"
           log.warning(
@@ -522,7 +523,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         }
         Stop
 
-      case ShutDownAssociation(localAddress, remoteAddress, _) ⇒
+      case ShutDownAssociation(_, remoteAddress, _) ⇒
         keepQuarantinedOr(remoteAddress) {
           log.debug(
             "Remote system with address [{}] has shut down. " +
@@ -587,7 +588,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   val accepting: Receive = {
     case ManagementCommand(cmd) ⇒
       val allStatuses: immutable.Seq[Future[Boolean]] =
-        transportMapping.values.map(transport ⇒ transport.managementCommand(cmd))(scala.collection.breakOut)
+        transportMapping.values.iterator.map(transport ⇒ transport.managementCommand(cmd)).to(immutable.IndexedSeq)
       akka.compat.Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender()
 
     case Quarantine(address, uidToQuarantineOption) ⇒
@@ -655,7 +656,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           }
       }
 
-    case s @ Send(message, senderOption, recipientRef, _) ⇒
+    case s @ Send(_, _, recipientRef, _) ⇒
       val recipientAddress = recipientRef.path.address
 
       def createAndRegisterWritingEndpoint(): ActorRef = {
@@ -677,7 +678,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         case Some(Gated(timeOfRelease)) ⇒
           if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint() ! s
           else extendedSystem.deadLetters ! s
-        case Some(Quarantined(uid, _)) ⇒
+        case Some(Quarantined(_, _)) ⇒
           // timeOfRelease is only used for garbage collection reasons, therefore it is ignored here. We still have
           // the Quarantined tombstone and we know what UID we don't want to accept, so use it.
           createAndRegisterWritingEndpoint() ! s
@@ -686,7 +687,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
       }
 
-    case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒
+    case ia @ InboundAssociation(_: AkkaProtocolHandle) ⇒
       handleInboundAssociation(ia, writerIsIdle = false)
     case EndpointWriter.StoppedReading(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
@@ -715,10 +716,12 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case ShutdownAndFlush ⇒
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
-      def shutdownAll[T](resources: TraversableOnce[T])(shutdown: T ⇒ Future[Boolean]): Future[Boolean] = {
-        (Future sequence resources.map(shutdown)) map { _.forall(identity) } recover {
-          case NonFatal(_) ⇒ false
-        }
+      def shutdownAll[T](resources: IterableOnce[T])(shutdown: T ⇒ Future[Boolean]): Future[Boolean] = {
+        Future.sequence(resources.toList.map(shutdown))
+          .map(_.forall(identity))
+          .recover {
+            case NonFatal(_) ⇒ false
+          }
       }
 
       (for {
@@ -776,10 +779,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
               endpoints.markAsQuarantined(handle.remoteAddress, uid, Deadline.now + settings.QuarantineDuration)
               createAndRegisterEndpoint(handle)
             }
-          case state ⇒
+          case _ ⇒
             createAndRegisterEndpoint(handle)
         }
     }
+    case _ ⇒ // ignore
   }
 
   private def createAndRegisterEndpoint(handle: AkkaProtocolHandle): Unit = {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -135,9 +135,9 @@ import akka.util.OptionVal
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case t @ Terminated(ref) ⇒ throw DeathPactException(ref)
-    case msg: Signal         ⇒ // that's ok
-    case other               ⇒ super.unhandled(other)
+    case Terminated(ref) ⇒ throw DeathPactException(ref)
+    case _: Signal       ⇒ // that's ok
+    case other           ⇒ super.unhandled(other)
   }
 
   override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {

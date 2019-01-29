@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.typed
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.typed.SingletonActor
 

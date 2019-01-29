@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -110,7 +110,7 @@ class RemoteContextAskSpec extends ScalaTestWithActorTestKit(RemoteContextAskSpe
       // wait until the service is seen on the first node
       val remoteRef = node1Probe.expectMessageType[Receptionist.Listing].serviceInstances(pingPongKey).head
 
-      spawn(Behaviors.setup[AnyRef] { (ctx) ⇒
+      spawn(Behaviors.setup[AnyRef] { ctx ⇒
         implicit val timeout: Timeout = 3.seconds
 
         ctx.ask(remoteRef)(Ping) {
@@ -118,7 +118,7 @@ class RemoteContextAskSpec extends ScalaTestWithActorTestKit(RemoteContextAskSpe
           case Failure(ex)   ⇒ ex
         }
 
-        Behaviors.receive { (_, msg) ⇒
+        Behaviors.receiveMessage { msg ⇒
           node1Probe.ref ! msg
           Behaviors.same
         }

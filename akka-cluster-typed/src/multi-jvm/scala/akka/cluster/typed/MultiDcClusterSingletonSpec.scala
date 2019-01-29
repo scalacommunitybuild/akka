@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
-import akka.actor.typed.Props
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName

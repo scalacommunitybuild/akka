@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -196,8 +196,6 @@ class AskSpec extends AkkaSpec {
       val echo = system.actorOf(Props(new Actor {
         def receive = {
           case x ⇒
-            val name = sender.path.name
-            val parent = sender.path.parent
             context.actorSelection(sender().path / "missing") ! x
         }
       }), "select-echo6")

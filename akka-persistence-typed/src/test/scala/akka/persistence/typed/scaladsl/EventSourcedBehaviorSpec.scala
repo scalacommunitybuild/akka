@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
@@ -7,27 +7,38 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated }
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.typed.EventAdapter
-import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl._
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.util.{ Success, Try }
-
+import scala.util.Success
+import scala.util.Try
+import akka.Done
+import akka.testkit.EventFilter
+import akka.actor.testkit.typed.{ TestException, TestKitSettings }
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.Terminated
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.SelectedSnapshot
+import akka.persistence.SnapshotMetadata
+import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.journal.inmem.InmemJournal
+import akka.persistence.query.EventEnvelope
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.Sequence
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedBehaviorSpec {
@@ -61,7 +72,8 @@ object EventSourcedBehaviorSpec {
   def conf: Config = ConfigFactory.parseString(
     s"""
     akka.loglevel = INFO
-    # akka.persistence.typed.log-stashing = INFO
+    akka.loggers = [akka.testkit.TestEventListener]
+    # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
@@ -89,6 +101,8 @@ object EventSourcedBehaviorSpec {
   final case object DelayFinished extends Command
   private case object Timeout extends Command
   final case object LogThenStop extends Command
+  final case object Fail extends Command
+  final case object StopIt extends Command
 
   sealed trait Event
   final case class Incremented(delta: Int) extends Event
@@ -153,7 +167,7 @@ object EventSourcedBehaviorSpec {
 
         case cmd: IncrementWithConfirmation ⇒
           Effect.persist(Incremented(1))
-            .thenReply(cmd)(newState ⇒ Done)
+            .thenReply(cmd)(_ ⇒ Done)
 
         case GetValue(replyTo) ⇒
           replyTo ! state
@@ -211,6 +225,13 @@ object EventSourcedBehaviorSpec {
               loggingActor ! firstLogging
             }
             .thenStop
+
+        case Fail ⇒
+          throw new TestException("boom!")
+
+        case StopIt ⇒
+          Effect.none.thenStop()
+
       },
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒
@@ -229,13 +250,16 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
   import EventSourcedBehaviorSpec._
 
-  implicit val testSettings = TestKitSettings(system)
+  private implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val materializer = ActorMaterializer()(system.toUntyped)
   val queries: LeveldbReadJournal = PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](
     LeveldbReadJournal.Identifier)
+
+  // needed for the untyped event filter
+  implicit val actorSystem = system.toUntyped
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
@@ -639,15 +663,38 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     }
 
     "fail after recovery timeout" in {
-      val c = spawn(Behaviors.setup[Command](ctx ⇒
-        counter(ctx, nextPid)
-          .withSnapshotPluginId("slow-snapshot-store")
-          .withJournalPluginId("short-recovery-timeout"))
-      )
+      EventFilter.error(start = "Persistence failure when replaying snapshot", occurrences = 1).intercept {
+        val c = spawn(Behaviors.setup[Command](ctx ⇒
+          counter(ctx, nextPid)
+            .withSnapshotPluginId("slow-snapshot-store")
+            .withJournalPluginId("short-recovery-timeout"))
+        )
 
-      val probe = TestProbe[State]
+        val probe = TestProbe[State]
 
-      probe.expectTerminated(c, probe.remainingOrDefault)
+        probe.expectTerminated(c, probe.remainingOrDefault)
+      }
+    }
+
+    "not wrap a failure caused by command stashed while recovering in a journal failure" in {
+      val pid = nextPid()
+      val probe = TestProbe[AnyRef]
+
+      // put some events in there, so that recovering takes a little time
+      val c = spawn(Behaviors.setup[Command](counter(_, pid)))
+      (0 to 50).foreach { _ ⇒
+        c ! IncrementWithConfirmation(probe.ref)
+        probe.expectMessage(Done)
+      }
+      c ! StopIt
+      probe.expectTerminated(c)
+
+      EventFilter[TestException](occurrences = 1).intercept {
+        val c2 = spawn(Behaviors.setup[Command](counter(_, pid)))
+        c2 ! Fail
+        probe.expectTerminated(c2) // should fail
+      }
+
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
@@ -656,7 +703,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
         ctx.watch(toWatch)
         Behaviors.receive[Any] { (_, _) ⇒ Behaviors.same }
           .receiveSignal {
-            case (_, s: Terminated) ⇒
+            case (_, _: Terminated) ⇒
               probe.ref ! "Terminated"
               Behaviors.stopped
           }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -97,7 +97,7 @@ private[akka] class BalancingDispatcher(
           && i.hasNext
           && (executorService.executor match {
             case lm: LoadMetrics ⇒ lm.atFullThrottle == false
-            case other           ⇒ true
+            case _               ⇒ true
           })
           && !registerForExecution(i.next.mailbox, false, false))
           scheduleOne(i)

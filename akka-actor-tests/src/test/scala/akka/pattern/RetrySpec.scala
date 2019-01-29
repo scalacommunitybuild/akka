@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -68,7 +68,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       }
 
       val retried = retry(
-        attempt,
+        () ⇒ attempt,
         10,
         100 milliseconds
       )
@@ -89,7 +89,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       }
 
       val retried = retry(
-        attempt,
+        () ⇒ attempt,
         5,
         100 milliseconds
       )

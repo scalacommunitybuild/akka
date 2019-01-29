@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -20,7 +20,6 @@ import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
-import akka.stream.scaladsl.Sink
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._

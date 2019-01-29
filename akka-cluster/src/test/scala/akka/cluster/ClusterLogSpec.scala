@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -68,7 +68,7 @@ class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
       cluster.settings.LogInfoVerbose should ===(false)
       join("is the new leader")
       awaitUp()
-      down("is no longer the leader")
+      down("is no longer leader")
     }
   }
 }

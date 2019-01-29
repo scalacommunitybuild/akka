@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -28,7 +28,7 @@ object ScatterGatherFirstCompletedSpec {
         case Stop(None)                     ⇒ context.stop(self)
         case Stop(Some(_id)) if (_id == id) ⇒ context.stop(self)
         case _id: Int if (_id == id)        ⇒
-        case x ⇒ {
+        case _ ⇒ {
           Thread sleep 100 * id
           sender() ! id
         }

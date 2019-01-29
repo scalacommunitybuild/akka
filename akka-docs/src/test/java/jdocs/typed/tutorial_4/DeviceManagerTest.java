@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_4;
@@ -16,8 +16,7 @@ import static org.junit.Assert.assertNotEquals;
 
 public class DeviceManagerTest extends JUnitSuite {
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource();
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Test
   public void testReplyToRegistrationRequests() {
@@ -25,12 +24,11 @@ public class DeviceManagerTest extends JUnitSuite {
     ActorRef<DeviceManagerMessage> managerActor = testKit.spawn(DeviceManager.createBehavior());
 
     managerActor.tell(new RequestTrackDevice("group1", "device", probe.getRef()));
-    DeviceRegistered registered1 = probe.expectMessageClass(DeviceRegistered.class);
+    DeviceRegistered registered1 = probe.receiveMessage();
 
     // another group
     managerActor.tell(new RequestTrackDevice("group2", "device", probe.getRef()));
-    DeviceRegistered registered2 = probe.expectMessageClass(DeviceRegistered.class);
+    DeviceRegistered registered2 = probe.receiveMessage();
     assertNotEquals(registered1.device, registered2.device);
   }
-
 }

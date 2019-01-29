@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -17,6 +17,7 @@ import akka.event.Logging.LogEvent
 import akka.event.Logging.Error
 import akka.event.Logging.Warning
 import scala.util.control.NonFatal
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -229,13 +230,13 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * INTERNAL API
    */
   private[akka] def sort(in: Iterable[CauseDirective]): immutable.Seq[CauseDirective] =
-    (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
+    in.foldLeft(new ArrayBuffer[CauseDirective](in.size)) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }.to[immutable.IndexedSeq]
+    }.to(immutable.IndexedSeq)
 
   private[akka] def withinTimeRangeOption(withinTimeRange: Duration): Option[Duration] =
     if (withinTimeRange.isFinite && withinTimeRange >= Duration.Zero) Some(withinTimeRange) else None

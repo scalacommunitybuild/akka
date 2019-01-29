@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -475,8 +475,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
   "illustrate use of source queue" in {
     //#source-queue
-    val bufferSize = 5
-    val elementsToProcess = 3
+    val bufferSize = 10
+    val elementsToProcess = 5
 
     val queue = Source
       .queue[Int](bufferSize, OverflowStrategy.backpressure)

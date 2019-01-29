@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl;
@@ -16,15 +16,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
-import java.util.Objects;
-
 public class NullEmptyStateTest extends JUnitSuite {
 
-  private static final Config config = ConfigFactory.parseString(
-    "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+  private static final Config config =
+      ConfigFactory.parseString(
+          "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
 
-  @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
   static class NullEmptyState extends EventSourcedBehavior<String, String, String> {
 
@@ -47,17 +45,12 @@ public class NullEmptyStateTest extends JUnitSuite {
 
     @Override
     public CommandHandler<String, String, String> commandHandler() {
-      CommandHandlerBuilder<String, String, String, String> b1 =
-        commandHandlerBuilder(Objects::isNull)
+
+      return newCommandHandlerBuilder()
+          .forAnyState()
           .matchCommand("stop"::equals, command -> Effect().stop())
-          .matchCommand(String.class, this::persistCommand);
-
-      CommandHandlerBuilder<String, String, String, String> b2 =
-        commandHandlerBuilder(String.class)
-        .matchCommand("stop"::equals, command -> Effect().stop())
-        .matchCommand(String.class, this::persistCommand);
-
-      return b1.orElse(b2).build();
+          .matchCommand(String.class, this::persistCommand)
+          .build();
     }
 
     private Effect<String, String> persistCommand(String command) {
@@ -66,24 +59,24 @@ public class NullEmptyStateTest extends JUnitSuite {
 
     @Override
     public EventHandler<String, String> eventHandler() {
-      return eventHandlerBuilder()
-        .matchEvent(String.class, this::applyEvent)
-        .build();
+      return newEventHandlerBuilder()
+          .forAnyState()
+          .matchEvent(String.class, this::applyEvent)
+          .build();
     }
 
     private String applyEvent(String state, String event) {
       probe.tell("eventHandler:" + state + ":" + event);
-      if (state == null)
-        return event;
-      else
-        return state + event;
+      if (state == null) return event;
+      else return state + event;
     }
   }
 
   @Test
   public void handleNullState() throws Exception {
     TestProbe<String> probe = testKit.createTestProbe();
-    Behavior<String> b = Behaviors.setup(ctx -> new NullEmptyState(new PersistenceId("a"), probe.ref()));
+    Behavior<String> b =
+        Behaviors.setup(ctx -> new NullEmptyState(new PersistenceId("a"), probe.ref()));
 
     ActorRef<String> ref1 = testKit.spawn(b);
     probe.expectMessage("onRecoveryCompleted:null");

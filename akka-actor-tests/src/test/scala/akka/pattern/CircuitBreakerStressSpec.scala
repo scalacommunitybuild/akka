@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -42,7 +42,7 @@ object CircuitBreakerStressSpec {
       case JobDone ⇒
         doneCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
-      case Failure(ex: CircuitBreakerOpenException) ⇒
+      case Failure(_: CircuitBreakerOpenException) ⇒
         circCount += 1
         breaker.withCircuitBreaker(job).pipeTo(self)
       case Failure(_: TimeoutException) ⇒

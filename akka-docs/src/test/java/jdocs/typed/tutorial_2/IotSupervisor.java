@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_2;
 
-//#iot-supervisor
+// #iot-supervisor
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
 import akka.actor.typed.javadsl.AbstractBehavior;
@@ -28,15 +28,12 @@ public class IotSupervisor extends AbstractBehavior<Void> {
   // No need to handle any messages
   @Override
   public Receive<Void> createReceive() {
-    return receiveBuilder()
-      .onSignal(PostStop.class, signal -> postStop())
-      .build();
+    return receiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
   }
 
   private IotSupervisor postStop() {
     context.getLog().info("IoT Application stopped");
     return this;
   }
-
 }
-//#iot-supervisor
+// #iot-supervisor

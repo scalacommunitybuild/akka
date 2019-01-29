@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -49,7 +49,7 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
               "Discarding message [{}], because actor is to be stopped", other)
             Behaviors.unhandled
           } else {
-            stash(other)
+            stashInternal(other)
             Behaviors.same
           }
 

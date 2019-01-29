@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery.config
@@ -12,7 +12,6 @@ import akka.event.Logging
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
-import scala.collection.{ breakOut, immutable }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 

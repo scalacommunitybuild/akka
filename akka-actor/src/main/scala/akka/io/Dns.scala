@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -12,7 +12,11 @@ import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
 import java.util.function.{ Function ⇒ JFunction }
-import scala.collection.{ breakOut, immutable }
+
+import akka.util.unused
+
+import scala.collection.immutable
+import akka.util.ccompat._
 
 abstract class Dns {
 
@@ -20,7 +24,7 @@ abstract class Dns {
    * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
    * the akka.actor.io.dns.resolver that is configured.
    */
-  def cached(name: String): Option[Dns.Resolved] = None
+  def cached(@unused name: String): Option[Dns.Resolved] = None
 
   /**
    * If an entry is cached return it immediately. If it is not then
@@ -53,12 +57,12 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
-      val ipv4: immutable.Seq[Inet4Address] = addresses.collect({
+      val ipv4: immutable.Seq[Inet4Address] = addresses.iterator.collect({
         case a: Inet4Address ⇒ a
-      })(breakOut)
-      val ipv6: immutable.Seq[Inet6Address] = addresses.collect({
+      }).to(immutable.IndexedSeq)
+      val ipv6: immutable.Seq[Inet6Address] = addresses.iterator.collect({
         case a: Inet6Address ⇒ a
-      })(breakOut)
+      }).to(immutable.IndexedSeq)
       Resolved(name, ipv4, ipv6)
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -43,7 +43,7 @@ import scala.concurrent.duration._
   val udp = IO(Udp)
   val tcp = IO(Tcp)
 
-  var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
+  private[internal] var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
 
   lazy val tcpDnsClient: ActorRef = createTcpClient()
 
@@ -112,7 +112,7 @@ import scala.concurrent.duration._
     case Udp.Received(data, remote) ⇒
       log.debug("Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
-      log.debug("Decoded UDP DNS response [{}]", data)
+      log.debug("Decoded UDP DNS response [{}]", msg)
 
       if (msg.flags.isTruncated) {
         log.debug("DNS response truncated, falling back to TCP")

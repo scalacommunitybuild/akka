@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -74,7 +74,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       otherActor ! Request("give me cookies", context.self)
       // #request-response-send
 
-      probe.expectMessageType[Response]
+      probe.receiveMessage()
     }
 
     "contain a sample for adapted response" in {

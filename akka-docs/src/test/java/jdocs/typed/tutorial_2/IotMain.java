@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_2;
 
-//#iot-app
+// #iot-app
 import akka.actor.typed.ActorSystem;
 
 public class IotMain {
@@ -13,6 +13,5 @@ public class IotMain {
     // Create ActorSystem and top level supervisor
     ActorSystem.create(IotSupervisor.createBehavior(), "iot-system");
   }
-
 }
-//#iot-app
+// #iot-app

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.contrib.jul
@@ -98,9 +98,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
 
     if (loggingExecutionContext.isDefined) {
       implicit val context = loggingExecutionContext.get
-      Future(logger.log(record)).onFailure {
-        case thrown: Throwable ⇒ thrown.printStackTrace()
-      }
+      Future(logger.log(record)).failed.foreach { _.printStackTrace() }
     } else
       logger.log(record)
   }

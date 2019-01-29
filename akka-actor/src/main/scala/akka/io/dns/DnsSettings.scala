@@ -1,21 +1,25 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
 
+import java.io.File
 import java.net.{ InetSocketAddress, URI }
 import java.util
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.io.dns.internal.{ ResolvConf, ResolvConfParser }
+import akka.util.Helpers
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.{ Config, ConfigValueType }
 
 import scala.collection.JavaConverters._
-import scala.collection.breakOut
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
+import akka.util.ccompat._
 
 /** INTERNAL API */
 @InternalApi
@@ -35,7 +39,7 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
             parseNameserverAddress(other) :: Nil
         }
       case ConfigValueType.LIST ⇒
-        val userAddresses = c.getStringList("nameservers").asScala.map(parseNameserverAddress)(breakOut)
+        val userAddresses = c.getStringList("nameservers").asScala.iterator.map(parseNameserverAddress).to(immutable.IndexedSeq)
         require(userAddresses.nonEmpty, "nameservers can not be empty")
         userAddresses.toList
       case _ ⇒ throw new IllegalArgumentException("Invalid type for nameservers. Must be a string or string list")
@@ -43,6 +47,54 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
   }
 
   val ResolveTimeout: FiniteDuration = c.getDuration("resolve-timeout").asScala
+
+  private lazy val resolvConf: Option[ResolvConf] = {
+    val etcResolvConf = new File("/etc/resolv.conf")
+    // Avoid doing the check on Windows, no point
+    if (Helpers.isWindows) {
+      None
+    } else if (etcResolvConf.exists()) {
+      val parsed = ResolvConfParser.parseFile(etcResolvConf)
+      parsed match {
+        case Success(value) ⇒ Some(value)
+        case Failure(exception) ⇒
+          if (system.log.isWarningEnabled) {
+            system.log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
+          }
+          None
+      }
+    } else None
+  }
+
+  val SearchDomains: List[String] = {
+    c.getValue("search-domains").valueType() match {
+      case ConfigValueType.STRING ⇒
+        c.getString("search-domains") match {
+          case "default" ⇒ resolvConf.map(_.search).getOrElse(Nil)
+          case single    ⇒ List(single)
+        }
+      case ConfigValueType.LIST ⇒
+        c.getStringList("search-domains").asScala.toList
+      case _ ⇒ throw new IllegalArgumentException("Invalid type for search-domains. Must be a string or string list.")
+    }
+  }
+
+  val NDots: Int = {
+    c.getValue("ndots").valueType() match {
+      case ConfigValueType.STRING ⇒
+        c.getString("ndots") match {
+          case "default" ⇒ resolvConf.map(_.ndots).getOrElse(1)
+          case _         ⇒ throw new IllegalArgumentException("Invalid value for ndots. Must be the string 'default' or an integer.")
+        }
+      case ConfigValueType.NUMBER ⇒
+        val ndots = c.getInt("ndots")
+        if (ndots < 0) {
+          throw new IllegalArgumentException("Invalid value for ndots, ndots must not be negative.")
+        }
+        ndots
+      case _ ⇒ throw new IllegalArgumentException("Invalid value for ndots. Must be the string 'default' or an integer.")
+    }
+  }
 
   // -------------------------
 

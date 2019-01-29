@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -59,7 +59,7 @@ class AkkaVersionSpec extends WordSpec with Matchers {
     }
 
     "succeed if Akka version is SNAPSHOT" in {
-      AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.19")
+      AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.20")
     }
 
     "succeed if Akka version is timestamped SNAPSHOT" in {

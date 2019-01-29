@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -722,10 +722,10 @@ class CircuitBreaker(
         val f = materialize(body)
 
         f.onComplete {
-          case s: Success[_] ⇒
+          case _: Success[_] ⇒
             notifyCallSuccessListeners(start)
             callSucceeds()
-          case Failure(ex) ⇒
+          case Failure(_) ⇒
             notifyCallFailureListeners(start)
             callFails()
         }

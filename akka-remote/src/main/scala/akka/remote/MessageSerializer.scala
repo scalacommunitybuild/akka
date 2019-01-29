@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -10,6 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder, OutboundEnvelope }
 import akka.serialization._
+import akka.util.unused
 
 import scala.util.control.NonFatal
 
@@ -83,8 +84,13 @@ private[akka] object MessageSerializer {
     } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
-  def deserializeForArtery(system: ExtendedActorSystem, originUid: Long, serialization: Serialization,
-                           serializer: Int, classManifest: String, envelope: EnvelopeBuffer): AnyRef = {
+  def deserializeForArtery(
+    @unused system:    ExtendedActorSystem,
+    @unused originUid: Long,
+    serialization:     Serialization,
+    serializer:        Int,
+    classManifest:     String,
+    envelope:          EnvelopeBuffer): AnyRef = {
     serialization.deserializeByteBuffer(envelope.byteBuffer, serializer, classManifest)
   }
 }

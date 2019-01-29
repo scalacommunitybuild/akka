@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
 import scala.concurrent.Promise
+
 import akka.Done
-import akka.actor.testkit.typed.TE
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed
 import akka.actor.typed.Behavior
@@ -38,11 +39,11 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val ref = spawn(Behaviors.setup[AnyRef] { _ ⇒
         Behaviors.intercept(
           new BehaviorInterceptor[AnyRef, AnyRef] {
-            override def aroundReceive(context: typed.ActorContext[AnyRef], message: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
+            override def aroundReceive(context: typed.TypedActorContext[AnyRef], message: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
               target(context, message)
             }
 
-            override def aroundSignal(context: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
+            override def aroundSignal(context: typed.TypedActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
               target(context, signal)
             }
           }
@@ -76,7 +77,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.stopped(
           // illegal:
           Behaviors.setup[String] { _ ⇒
-            throw TE("boom!")
+            throw TestException("boom!")
           }
         )
       }

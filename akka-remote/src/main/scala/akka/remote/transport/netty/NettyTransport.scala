@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
@@ -505,7 +505,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       } catch {
         case NonFatal(e) ⇒ {
           log.error("failed to bind to {}, shutting down Netty transport", address)
-          try { shutdown() } catch { case NonFatal(e) ⇒ } // ignore possible exception during shutdown
+          try { shutdown() } catch { case NonFatal(_) ⇒ } // ignore possible exception during shutdown
           throw e
         }
       }

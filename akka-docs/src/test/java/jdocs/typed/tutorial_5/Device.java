@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_5;
@@ -38,11 +38,11 @@ public class Device extends AbstractBehavior<DeviceMessage> {
   @Override
   public Receive<DeviceMessage> createReceive() {
     return receiveBuilder()
-      .onMessage(RecordTemperature.class, this::recordTemperature)
-      .onMessage(ReadTemperature.class, this::readTemperature)
-      .onMessage(Passivate.class, m -> Behaviors.stopped())
-      .onSignal(PostStop.class, signal -> postStop())
-      .build();
+        .onMessage(RecordTemperature.class, this::recordTemperature)
+        .onMessage(ReadTemperature.class, this::readTemperature)
+        .onMessage(Passivate.class, m -> Behaviors.stopped())
+        .onSignal(PostStop.class, signal -> postStop())
+        .build();
   }
 
   private Behavior<DeviceMessage> recordTemperature(RecordTemperature r) {

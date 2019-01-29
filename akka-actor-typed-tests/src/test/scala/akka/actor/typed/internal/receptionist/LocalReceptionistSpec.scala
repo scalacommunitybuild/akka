@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.receptionist
@@ -117,7 +117,7 @@ class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike 
     "be present in the system" in {
       val probe = TestProbe[Receptionist.Listing]()
       system.receptionist ! Find(ServiceKeyA, probe.ref)
-      val listing: Listing = probe.expectMessageType[Listing]
+      val listing: Listing = probe.receiveMessage()
       listing.isForKey(ServiceKeyA) should ===(true)
       listing.serviceInstances(ServiceKeyA) should be(Set())
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.typed.tutorial_4;
@@ -20,7 +20,7 @@ abstract class DeviceProtocol {
     final double value;
     final ActorRef<TemperatureRecorded> replyTo;
 
-    public RecordTemperature(long requestId, double value, ActorRef<TemperatureRecorded> replyTo){
+    public RecordTemperature(long requestId, double value, ActorRef<TemperatureRecorded> replyTo) {
       this.requestId = requestId;
       this.value = value;
       this.replyTo = replyTo;
@@ -55,10 +55,10 @@ abstract class DeviceProtocol {
     }
   }
 
-  //#passivate-msg
+  // #passivate-msg
   static enum Passivate implements DeviceMessage {
     INSTANCE
   }
-  //#passivate-msg
+  // #passivate-msg
 
 }

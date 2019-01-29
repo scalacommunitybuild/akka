@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -51,11 +51,11 @@ private[akka] class CachingConfig(_config: Config) extends Config {
   private def getPathEntry(path: String): PathEntry = entryMap.get(path) match {
     case null ⇒
       val ne = Try { config.hasPath(path) } match {
-        case Failure(e)     ⇒ invalidPathEntry
+        case Failure(_)     ⇒ invalidPathEntry
         case Success(false) ⇒ nonExistingPathEntry
         case _ ⇒
           Try { config.getValue(path) } match {
-            case Failure(e) ⇒
+            case Failure(_) ⇒
               emptyPathEntry
             case Success(v) ⇒
               if (v.valueType() == ConfigValueType.STRING)

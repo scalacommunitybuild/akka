@@ -208,6 +208,8 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
 - other tricky situations
 
+The binary compatibility of the current changes can be checked by running `sbt +mimaReportBinaryIssues`.
+
 ## Pull request requirements
 
 For a pull request to be considered at all it has to meet these requirements:
@@ -440,7 +442,8 @@ Scala has proven the most viable way to do it, as long as you keep the following
    
 1. Traits that are part of the Java API should only be used to define pure interfaces, as soon as there are implementations of methods, prefer 
    `abstract class`.
-   
+      
+1. Any method definition in a class that will be part of the Java API should not use any default parameters, as they will show up ugly when using them from Java, use plain old method overloading instead.
    
 
 ### Overview of Scala types and their Java counterparts

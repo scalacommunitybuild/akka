@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -23,6 +23,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
+import akka.util.ccompat.imm._
 
 object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -121,7 +122,7 @@ abstract class RestartNodeSpec
       runOn(second) {
         Cluster(secondSystem).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(secondSystem).readView.members.size should ===(3))
-        awaitAssert(Cluster(secondSystem).readView.members.map(_.status) should ===(Set(Up)))
+        awaitAssert(Cluster(secondSystem).readView.members.unsorted.map(_.status) should ===(Set(Up)))
       }
       enterBarrier("started")
 
@@ -139,7 +140,7 @@ abstract class RestartNodeSpec
       runOn(second) {
         Cluster(restartedSecondSystem).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(restartedSecondSystem).readView.members.size should ===(3))
-        awaitAssert(Cluster(restartedSecondSystem).readView.members.map(_.status) should ===(Set(Up)))
+        awaitAssert(Cluster(restartedSecondSystem).readView.members.unsorted.map(_.status) should ===(Set(Up)))
       }
       runOn(first, third) {
         awaitAssert {

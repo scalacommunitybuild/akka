@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -16,6 +16,11 @@ class PNCounterMapSpec extends WordSpec with Matchers {
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
 
   "A PNCounterMap" must {
+
+    "be able to increment and decrement entries with implicit SelfUniqueAddress" in {
+      implicit val node = SelfUniqueAddress(node1)
+      PNCounterMap().incrementBy("a", 2).incrementBy("b", 1).incrementBy("b", 2).decrementBy("a", 1).entries should be(Map("a" → 1, "b" → 3))
+    }
 
     "be able to increment and decrement entries" in {
       val m = PNCounterMap().increment(node1, "a", 2).increment(node1, "b", 3).decrement(node2, "a", 1)

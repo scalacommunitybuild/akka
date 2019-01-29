@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -14,7 +14,7 @@ import akka.remote.QuarantinedEvent
 import akka.remote.RARP
 
 object RemoteDeathWatchSpec {
-  val otherPort = SocketUtil.temporaryLocalPort(udp = true)
+  val otherPort = ArteryMultiNodeSpec.freePort(ConfigFactory.load())
 
   val config = ConfigFactory.parseString(s"""
     akka {

@@ -1,18 +1,19 @@
-import akka.{AutomaticModuleName, ParadoxSupport, ScalafixIgnoreFilePlugin}
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr,
-  ScalafixIgnoreFilePlugin)
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader,
+  CopyrightHeaderInPr,
+  ScalafixIgnoreFilePlugin,
+  JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
 addCommandAlias(
-  name  ="fix",
-  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile")
-
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.tools.mima.plugin.MimaPlugin
-import spray.boilerplate.BoilerplatePlugin
+  name  ="fixall",
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
 import akka.AkkaBuild._
 import akka.{AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator}
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys.{initialCommands, parallelExecution}
+import spray.boilerplate.BoilerplatePlugin
 
 initialize := {
   // Load system properties from a file to make configuration from Jenkins easier
@@ -57,12 +58,12 @@ lazy val root = Project(
  .settings(unidocRootIgnoreProjects :=
    (CrossVersion.partialVersion(scalaVersion.value) match {
      case Some((2, n)) if n == 11 ⇒ aggregatedProjects // ignore all, don't unidoc when scalaVersion is 2.11
-     case _                       ⇒ Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs) 
+     case _                       ⇒ Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs)
    })
  )
  .settings(
    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
- )
+ ).enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
@@ -492,7 +493,6 @@ lazy val discovery = akkaModule("akka-discovery")
     actorTests % "test->test"
   )
   .settings(Dependencies.discovery)
-  .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.discovery"))
   .settings(OSGi.discovery)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -22,7 +22,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
 
   private val cache = new AtomicReference(new Cache[String, Dns.Resolved](
     immutable.SortedSet()(expiryEntryOrdering[String]()),
-    Map(), clock))
+    Map(), () ⇒ clock))
 
   private val nanoBase = System.nanoTime()
 

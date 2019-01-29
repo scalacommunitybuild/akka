@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -10,10 +10,10 @@ import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
 import akka.cluster._
 import akka.japi.Util
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
-import akka.cluster.typed.internal.AdapterClusterImpl
-import scala.collection.immutable
-
 import akka.actor.typed.ExtensionSetup
+import akka.cluster.typed.internal.AdapterClusterImpl
+
+import scala.collection.immutable
 
 /**
  * Messages for subscribing to changes in the cluster state

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -53,6 +53,7 @@ import scala.collection.immutable.TreeSet
 import akka.cluster.MemberStatus
 import scala.annotation.varargs
 import akka.util.JavaDurationConverters._
+import akka.util.ccompat._
 
 object ReplicatorSettings {
 
@@ -100,6 +101,15 @@ object ReplicatorSettings {
    */
   @InternalApi private[akka] def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
+
+  /**
+   * INTERNAL API
+   * The name of the actor used in DistributedData extensions.
+   */
+  @InternalApi private[akka] def name(system: ActorSystem, modifier: Option[String]): String = {
+    val name = system.settings.config.getString("akka.cluster.distributed-data.name")
+    modifier.map(s ⇒ s + name.take(1).toUpperCase + name.drop(1)).getOrElse(name)
+  }
 }
 
 /**
@@ -1100,13 +1110,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     override def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation = {
       // Important to include the pruning state in the deltas. For example if the delta is based
       // on an entry that has been pruned but that has not yet been performed on the target node.
-      DeltaPropagation(selfUniqueAddress, reply = false, deltas.collect {
+      DeltaPropagation(selfUniqueAddress, reply = false, deltas.iterator.collect {
         case (key, (d, fromSeqNr, toSeqNr)) if d != NoDeltaPlaceholder ⇒
           getData(key) match {
             case Some(envelope) ⇒ key → Delta(envelope.copy(data = d), fromSeqNr, toSeqNr)
             case None           ⇒ key → Delta(DataEnvelope(d), fromSeqNr, toSeqNr)
           }
-      }(collection.breakOut))
+      }.toMap)
     }
   }
   val deltaPropagationTask: Option[Cancellable] =
@@ -1452,9 +1462,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   def receiveGetKeyIds(): Unit = {
-    val keys: Set[KeyId] = dataEntries.collect {
+    val keys: Set[KeyId] = dataEntries.iterator.collect {
       case (key, (DataEnvelope(data, _, _), _)) if data != DeletedData ⇒ key
-    }(collection.breakOut)
+    }.to(immutable.Set)
     replyTo ! GetKeyIdsResult(keys)
   }
 
@@ -1691,14 +1701,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip to [{}], containing [{}]", replyTo.path.address, keys.mkString(", "))
-      val g = Gossip(keys.map(k ⇒ k → getData(k).get)(collection.breakOut), sendBack = otherDifferentKeys.nonEmpty)
+      val g = Gossip(keys.iterator.map(k ⇒ k → getData(k).get).toMap, sendBack = otherDifferentKeys.nonEmpty)
       replyTo ! g
     }
     val myMissingKeys = otherKeys diff myKeys
     if (myMissingKeys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip status to [{}], requesting missing [{}]", replyTo.path.address, myMissingKeys.mkString(", "))
-      val status = Status(myMissingKeys.map(k ⇒ k → NotFoundDigest)(collection.breakOut), chunk, totChunks)
+      val status = Status(myMissingKeys.iterator.map(k ⇒ k → NotFoundDigest).toMap, chunk, totChunks)
       replyTo ! status
     }
   }
@@ -1837,9 +1847,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def initRemovedNodePruning(): Unit = {
     // initiate pruning for removed nodes
-    val removedSet: Set[UniqueAddress] = removedNodes.collect {
+    val removedSet: Set[UniqueAddress] = removedNodes.iterator.collect {
       case (r, t) if ((allReachableClockTime - t) > maxPruningDisseminationNanos) ⇒ r
-    }(collection.breakOut)
+    }.to(immutable.Set)
 
     if (removedSet.nonEmpty) {
       for ((key, (envelope, _)) ← dataEntries; removed ← removedSet) {

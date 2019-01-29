@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -263,6 +263,22 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       intercept[IOException] {
         inputStream.read()
       }
+    }
+
+    "propagate error to InputStream" in {
+      val readTimeout = 3.seconds
+      val (probe, inputStream) = TestSource.probe[ByteString]
+        .toMat(StreamConverters.asInputStream(readTimeout))(Keep.both)
+        .run()
+
+      probe.sendNext(ByteString("one"))
+      val error = new RuntimeException("failure")
+      probe.sendError(error)
+      val buffer = Array.ofDim[Byte](5)
+      val thrown = intercept[IOException] {
+        inputStream.read(buffer) should !==(-1)
+      }
+      thrown.getCause should ===(error)
     }
   }
 

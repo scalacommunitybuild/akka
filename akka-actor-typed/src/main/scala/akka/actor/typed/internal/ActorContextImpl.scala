@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -9,13 +9,12 @@ import java.time.Duration
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.ArrayList
 import java.util.Optional
-import java.util.function
+import java.util.concurrent.CompletionStage
+import java.util.function.BiConsumer
 import java.util.function.BiFunction
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
-import scala.util.Failure
-import scala.util.Success
 import scala.util.Try
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -25,7 +24,7 @@ import akka.util.JavaDurationConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] trait ActorContextImpl[T] extends ActorContext[T] with javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
+@InternalApi private[akka] trait ActorContextImpl[T] extends TypedActorContext[T] with javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil
@@ -84,17 +83,31 @@ import akka.util.JavaDurationConverters._
   // Scala API impl
   override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
-    (target ? createRequest)(responseTimeout, system.scheduler).onComplete(res ⇒
-      self.asInstanceOf[ActorRef[AnyRef]] ! AdaptMessage(res, mapResponse)
-    )
+    pipeToSelf((target ? createRequest)(responseTimeout, system.scheduler))(mapResponse)
   }
 
   // Java API impl
-  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Duration, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
-    this.ask(target)(createRequest.apply) {
-      case Success(message) ⇒ applyToResponse.apply(message, null)
-      case Failure(ex)      ⇒ applyToResponse.apply(null.asInstanceOf[Res], ex)
-    }(responseTimeout.asScala, ClassTag[Res](resClass))
+  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Duration, createRequest: JFunction[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+    import akka.actor.typed.javadsl.AskPattern
+    val message = new akka.japi.function.Function[ActorRef[Res], Req] {
+      def apply(ref: ActorRef[Res]): Req = createRequest(ref)
+    }
+    pipeToSelf(AskPattern.ask(target, message, responseTimeout, system.scheduler), applyToResponse)
+  }
+
+  // Scala API impl
+  def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] ⇒ T): Unit = {
+    future.onComplete(value ⇒ self.unsafeUpcast ! AdaptMessage(value, mapResult))
+  }
+
+  // Java API impl
+  def pipeToSelf[Value](future: CompletionStage[Value], applyToResult: BiFunction[Value, Throwable, T]): Unit = {
+    future.whenComplete(new BiConsumer[Value, Throwable] {
+      def accept(value: Value, ex: Throwable): Unit = {
+        if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
+        if (ex != null) self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
+      }
+    })
   }
 
   private[akka] override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =

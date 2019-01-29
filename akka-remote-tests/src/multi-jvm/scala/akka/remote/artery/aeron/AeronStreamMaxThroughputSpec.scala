@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -10,6 +10,8 @@ import java.util.concurrent.Executors
 import scala.collection.AbstractIterator
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -194,10 +196,7 @@ abstract class AeronStreamMaxThroughputSpec
             killSwitch.shutdown()
           }
           pool.release(envelope)
-        }.onFailure {
-          case e ⇒
-            e.printStackTrace
-        }
+        }.failed.foreach { _.printStackTrace }
 
       enterBarrier(receiverName + "-started")
       Await.ready(done, barrierTimeout)

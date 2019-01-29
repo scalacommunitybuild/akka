@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -140,7 +140,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val DowningProviderClassName: String = {
     val name = cc.getString("downing-provider-class")
     if (name.nonEmpty) name
-    else if (AutoDownUnreachableAfter.isFinite()) classOf[AutoDowning].getName
+    else if (AutoDownUnreachableAfter.isFinite) classOf[AutoDowning].getName
     else classOf[NoDowning].getName
   }
 

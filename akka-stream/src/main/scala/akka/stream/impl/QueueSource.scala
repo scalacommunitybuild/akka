@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -181,12 +181,14 @@ import scala.util.control.NonFatal
         }
       }
 
-      // SourceQueueWithComplete impl
       override def watchCompletion() = completion.future
       override def offer(element: T): Future[QueueOfferResult] = {
         val p = Promise[QueueOfferResult]
         callback.invokeWithFeedback(Offer(element, p))
-          .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          .onComplete {
+            case scala.util.Success(_) ⇒
+            case scala.util.Failure(e) ⇒ p.tryFailure(e)
+          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
       override def complete(): Unit = callback.invoke(Completion)

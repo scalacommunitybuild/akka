@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -24,9 +24,8 @@ import akka.event.LogMarker
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.japi.Util.immutableSeq
-import akka.stream.IgnoreComplete
-import akka.stream.TLSClosing
 import akka.stream.TLSRole
+import akka.util.ccompat._
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -78,7 +77,7 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
   val SSLKeyStorePassword: String = config.getString("key-store-password")
   val SSLKeyPassword: String = config.getString("key-password")
   val SSLTrustStorePassword: String = config.getString("trust-store-password")
-  val SSLEnabledAlgorithms: Set[String] = immutableSeq(config.getStringList("enabled-algorithms")).to[Set]
+  val SSLEnabledAlgorithms: Set[String] = immutableSeq(config.getStringList("enabled-algorithms")).to(Set)
   val SSLProtocol: String = config.getString("protocol")
   val SSLRandomNumberGenerator: String = config.getString("random-number-generator")
   val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
@@ -158,8 +157,7 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     sslContext: SSLContext,
     role:       TLSRole,
     hostname:   String,
-    port:       Int,
-    closing:    TLSClosing = IgnoreComplete): SSLEngine = {
+    port:       Int): SSLEngine = {
 
     val engine = sslContext.createSSLEngine(hostname, port)
 

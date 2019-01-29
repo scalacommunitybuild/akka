@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -436,8 +436,9 @@ private[akka] trait HandleBackoff { this: Actor ⇒
         finalStopMessage match {
           case None ⇒
           case Some(fsm) ⇒
-            fsm(msg)
-            context.stop(self)
+            if (fsm(msg)) {
+              context.stop(self)
+            }
         }
     }
   }

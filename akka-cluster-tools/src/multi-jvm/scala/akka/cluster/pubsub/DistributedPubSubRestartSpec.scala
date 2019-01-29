@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
@@ -9,25 +9,19 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.actor.ActorLogging
-import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Status
-import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Delta
 import akka.actor.ActorSystem
 
 import scala.concurrent.Await
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.actor.ActorIdentity
-import akka.remote.RARP
 
 object DistributedPubSubRestartSpec extends MultiNodeConfig {
   val first = role("first")

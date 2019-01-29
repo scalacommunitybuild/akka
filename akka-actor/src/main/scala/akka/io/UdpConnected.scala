@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -11,6 +11,7 @@ import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
 import akka.util.ByteString
 import akka.actor._
+import akka.util.ccompat._
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -246,8 +247,8 @@ object UdpConnectedMessage {
    */
   def resumeReading: Command = ResumeReading
 
-  implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
+  implicit private def fromJava[T](coll: JIterable[T]): immutable.Iterable[T] = {
     import scala.collection.JavaConverters._
-    coll.asScala.to[immutable.Traversable]
+    coll.asScala.to(immutable.Iterable)
   }
 }

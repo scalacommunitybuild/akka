@@ -13,7 +13,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.4")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")
 // sbt-osgi 0.9.5 is available but breaks including jdk9-only classes
 // sbt-osgi 0.9.6 is available but breaks populating akka-protobuf-v3
-addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
+addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.6") // 0.9.6 for community build on JDK 15
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.7.0")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.1")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")

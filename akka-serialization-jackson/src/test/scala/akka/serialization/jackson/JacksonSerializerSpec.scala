@@ -489,10 +489,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
         val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
-        // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
-        json should include("""  "instant" : {""")
-        json should include("""    "nanos" : 75000000,""")
-        json should include("""    "seconds" : 1559907792""")
+        json should include("""  "instant" : """)
       }
     }
 

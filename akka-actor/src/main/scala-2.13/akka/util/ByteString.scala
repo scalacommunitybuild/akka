@@ -833,11 +833,6 @@ sealed abstract class ByteString
     array
   }
 
-  final override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int = {
-    // super uses byteiterator
-    copyToArray(xs, start, size.min(xs.size))
-  }
-
   // optimized in all subclasses, avoiding usage of the iterator to save allocations/transformations
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
     throw new UnsupportedOperationException("Method copyToArray is not implemented in ByteString")

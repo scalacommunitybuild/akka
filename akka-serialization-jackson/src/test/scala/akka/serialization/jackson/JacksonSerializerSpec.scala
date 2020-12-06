@@ -423,6 +423,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             val mapper: ObjectMapper = JsonMapper.builder(jsonFactory).build()
             // some customer configuration of the mapper
             mapper.setLocale(Locale.US)
+            mapper.registerModule(new JavaTimeModule)
             mapper
           } else
             super.newObjectMapper(bindingName, jsonFactory)

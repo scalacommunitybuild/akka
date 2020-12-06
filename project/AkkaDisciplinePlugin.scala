@@ -15,7 +15,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   override lazy val projectSettings = disciplineSettings
 
   // allow toggling for pocs/exploration of ideas without discpline
-  val enabled = !sys.props.contains("akka.no.discipline")
+  val enabled = false
 
   // We allow warnings in docs to get the 'snippets' right
   val nonFatalJavaWarningsFor = Set(

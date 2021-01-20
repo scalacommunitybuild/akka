@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -20,6 +20,7 @@ object Paradox {
           .url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
         "extref.akka-management.base_url" -> "https://doc.akka.io/docs/akka-management/current/%s",
+        "extref.platform-guide.base_url" -> "https://developer.lightbend.com/docs/akka-platform-guide/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
         "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -324,7 +324,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   val selfDc = cluster.selfDataCenter
 
-  private val gossipLogger =
+  private val gossipLogger: cluster.ClusterLogger =
     new cluster.ClusterLogger(
       Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterGossip)))
 
@@ -428,8 +428,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
 
     if (seedNodes.isEmpty) {
-      if (isClusterBootstrapUsed)
-        logDebug("Cluster Bootstrap is used for joining")
+      if (isClusterBootstrapAvailable)
+        logInfo("No seed nodes found in configuration, relying on Cluster Bootstrap for joining")
       else
         logInfo(
           "No seed-nodes configured, manual cluster join required, see " +
@@ -445,14 +445,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])
   }
 
-  private def isClusterBootstrapUsed: Boolean = {
-    val conf = context.system.settings.config
-    conf.hasPath("akka.management.cluster.bootstrap") &&
-    conf.hasPath("akka.management.http.route-providers") &&
-    conf
-      .getStringList("akka.management.http.route-providers")
-      .contains("akka.management.cluster.bootstrap.ClusterBootstrap$")
-  }
+  private def isClusterBootstrapAvailable: Boolean =
+    context.system.settings.config.hasPath("akka.management.cluster.bootstrap")
 
   override def postStop(): Unit = {
     context.system.eventStream.unsubscribe(self)
@@ -1015,9 +1009,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * Receive new gossip.
    */
   def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
-
     val from = envelope.from
-    val remoteGossip = envelope.gossip
+    val remoteGossip = try {
+      envelope.gossip
+    } catch {
+      case NonFatal(t) =>
+        gossipLogger.logWarning("Invalid Gossip. This should only happen during a rolling upgrade. {}", t.getMessage)
+        Gossip.empty
+
+    }
     val localGossip = latestGossip
 
     if (remoteGossip eq Gossip.empty) {

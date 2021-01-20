@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
@@ -679,7 +679,7 @@ import akka.util.OptionVal
     if (!isInitialized)
       UninitializedInterpreterImpl(logics.zipWithIndex.map {
         case (logic, idx) =>
-          LogicSnapshotImpl(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
+          LogicSnapshotImpl(idx, logic.toString, logic.attributes)
       }.toVector)
     else interpreter.toSnapshot
   }
@@ -753,13 +753,17 @@ import akka.util.OptionVal
     else if (shortCircuitBuffer != null) shortCircuitBatch()
   }
 
-  private def shortCircuitBatch(): Unit = {
-    while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty) shortCircuitBuffer
-      .poll() match {
-      case b: BoundaryEvent => processEvent(b)
-      case Resume           => finishShellRegistration()
+  @tailrec private def shortCircuitBatch(): Unit = {
+    if (shortCircuitBuffer.isEmpty) ()
+    else if (currentLimit == 0) {
+      self ! Resume
+    } else {
+      shortCircuitBuffer.poll() match {
+        case b: BoundaryEvent => processEvent(b)
+        case Resume           => finishShellRegistration()
+      }
+      shortCircuitBatch()
     }
-    if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
   }
 
   private def processEvent(b: BoundaryEvent): Unit = {

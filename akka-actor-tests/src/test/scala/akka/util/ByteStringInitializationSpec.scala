@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -39,7 +39,12 @@ class ByteStringInitializationSpec extends AnyWordSpec with Matchers {
 
       import scala.language.reflectiveCalls
       type WithRun = { def run(): Unit }
-      cleanCl.loadClass("akka.util.ByteStringInitTest").newInstance().asInstanceOf[WithRun].run()
+      cleanCl
+        .loadClass("akka.util.ByteStringInitTest")
+        .getDeclaredConstructor()
+        .newInstance()
+        .asInstanceOf[WithRun]
+        .run()
     }
   }
 }

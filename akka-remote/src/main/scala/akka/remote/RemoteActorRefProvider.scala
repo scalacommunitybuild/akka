@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -514,8 +514,10 @@ private[akka] class RemoteActorRefProvider(
     // using thread local LRU cache, which will call internalResolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
-      case null => internalResolveActorRef(path) // not initialized yet
-      case c    => c.threadLocalCache(this).getOrCompute(path)
+      case null =>
+        internalResolveActorRef(path) // not initialized yet
+      case c =>
+        c.threadLocalCache(this).resolve(path)
     }
   }
 

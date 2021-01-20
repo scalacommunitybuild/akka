@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson;
@@ -527,5 +527,16 @@ public interface JavaTestMessages {
     public int hashCode() {
       return name != null ? name.hashCode() : 0;
     }
+  }
+
+  // A class with non-public fields
+  final class ClassWithVisibility {
+    public final String publicField = "1234";
+    final String defaultField = "abcd";
+    protected final String protectedField = "vwxyz";
+    private final String privateField = "ABCD";
+
+    @JsonCreator
+    public ClassWithVisibility() {}
   }
 }

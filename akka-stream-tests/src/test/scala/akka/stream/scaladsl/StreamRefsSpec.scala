@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -419,7 +419,9 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) {
 
       // "concurrently"
       ks.shutdown()
-      remoteControl.success(None)
+      // note that while unlikely the killswitch shutdown can already have reached the source.maybe and in that case the
+      // remoteControl is already completed here
+      remoteControl.trySuccess(None)
 
       // since it is a race we can only confirm that it either completes or fails both sides
       // if it didn't work

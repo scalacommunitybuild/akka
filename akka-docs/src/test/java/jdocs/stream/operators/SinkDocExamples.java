@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators;
@@ -112,6 +112,23 @@ public class SinkDocExamples {
         source.runWith(Sink.fold(0, (res, element) -> res + element), system);
     sum.thenAccept(System.out::println);
     // #fold
+  }
+
+  static NotUsed cancelledExample() {
+    // #cancelled
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+    NotUsed sum = source.runWith(Sink.cancelled(), system);
+    return sum;
+    // #cancelled
+  }
+
+  static void headOptionExample() {
+    // #headoption
+    Source<Integer, NotUsed> source = Source.empty();
+    CompletionStage<Optional<Integer>> result = source.runWith(Sink.headOption(), system);
+    result.thenAccept(System.out::println);
+    // Optional.empty
+    // #headoption
   }
 
   static void ignoreExample() {

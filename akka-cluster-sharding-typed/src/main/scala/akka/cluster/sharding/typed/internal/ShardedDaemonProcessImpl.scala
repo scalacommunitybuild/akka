@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.internal
@@ -140,7 +140,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         StateStoreModeDData,
         RememberEntitiesStoreModeDData, // not used as remembered entities is off
         shardingBaseSettings.tuningParameters,
-        shardingBaseSettings.coordinatorSingletonSettings)
+        shardingBaseSettings.coordinatorSingletonSettings,
+        shardingBaseSettings.leaseSettings)
     }
 
     val nodeRoles = Cluster(system).selfMember.roles

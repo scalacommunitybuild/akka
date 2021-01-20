@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit
@@ -102,5 +102,6 @@ case class Cmd(data: String) extends TestCommand
 case object Passivate extends TestCommand
 case class Evt(data: String)
 case class EmptyState()
+case class NonEmptyState(data: String)
 case object Recovered
 case object Stopped

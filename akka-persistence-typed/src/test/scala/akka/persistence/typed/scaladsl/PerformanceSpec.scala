@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
@@ -117,7 +117,7 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
       akka.persistence.journal.leveldb.dir = "target/journal-PerformanceSpec"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
-      akka.test.single-expect-default = 10s
+      akka.actor.testkit.typed.single-expect-default = 10s
       """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with AnyWordSpecLike with LogCapturing {
 
   import PerformanceSpec._

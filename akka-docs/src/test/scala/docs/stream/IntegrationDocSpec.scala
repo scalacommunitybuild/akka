@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -489,6 +489,36 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       })
       .runWith(Sink.ignore)
     //#source-queue
+  }
+
+  "illustrate use of synchronous source queue" in {
+    //#source-queue-synchronous
+    val bufferSize = 1000
+
+    //#source-queue-synchronous
+    // format: OFF
+    //#source-queue-synchronous
+    val queue = Source
+      .queue[Int](bufferSize)
+      .map(x => x * x)
+      .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
+      .run()
+    //#source-queue-synchronous
+    // format: OFF
+    //#source-queue-synchronous
+
+    val fastElements = 1 to 10
+
+    implicit val ec = system.dispatcher
+    fastElements.foreach { x =>
+      queue.offer(x) match {
+        case QueueOfferResult.Enqueued    => println(s"enqueued $x")
+        case QueueOfferResult.Dropped     => println(s"dropped $x")
+        case QueueOfferResult.Failure(ex) => println(s"Offer failed ${ex.getMessage}")
+        case QueueOfferResult.QueueClosed => println("Source Queue closed")
+      }
+    }
+    //#source-queue-synchronous
   }
 
   "illustrate use of source actor ref" in {

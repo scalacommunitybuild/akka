@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -173,7 +173,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
             receivedPoisonPill,
             System.nanoTime(),
             version,
-            seenPerReplica))
+            seenPerReplica,
+            eventsReplayed = 0))
 
       case LoadSnapshotFailed(cause) =>
         onRecoveryFailure(cause)

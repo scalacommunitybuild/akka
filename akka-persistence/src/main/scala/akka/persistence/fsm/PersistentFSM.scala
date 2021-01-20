@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
@@ -49,8 +49,8 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
    * sequence number should trigger auto snapshot or not
    */
   val isSnapshotAfterSeqNo: Long => Boolean = snapshotAfterValue match {
-    case Some(snapShotAfterValue) => seqNo: Long => seqNo % snapShotAfterValue == 0
-    case None                     => _: Long => false //always false, if snapshotAfter is not specified in config
+    case Some(snapShotAfterValue) => (seqNo: Long) => seqNo % snapShotAfterValue == 0
+    case None                     => (_: Long) => false //always false, if snapshotAfter is not specified in config
   }
 }
 
@@ -380,7 +380,7 @@ object PersistentFSM {
       stopReason: Option[Reason] = None,
       replies: List[Any] = Nil,
       domainEvents: Seq[E] = Nil,
-      afterTransitionDo: D => Unit = { _: D =>
+      afterTransitionDo: D => Unit = { (_: D) =>
       })(private[akka] val notifies: Boolean = true) {
 
     /**

@@ -16,6 +16,7 @@ To use Akka Split Brain Resolver is part of `akka-cluster` and you probably alre
 dependency included. Otherwise, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -106,9 +107,9 @@ handling network partition, unresponsive nodes and crashed nodes.
 ## Strategies
 
 By default the @ref:[Keep Majority](#keep-majority) strategy will be used because it works well for
-most systems. However, it's wort considering the other available strategies and pick a strategy that fits
+most systems. However, it's worth considering the other available strategies and pick a strategy that fits
 the characteristics of your system. For example, in a Kubernetes environment the @ref:[Lease](#lease) strategy
-can be a good choice. 
+can be a good choice.
 
 Every strategy has a failure scenario where it makes a "wrong" decision. This section describes the different
 strategies and guidelines of when to use what.

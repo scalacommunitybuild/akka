@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -42,7 +42,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       StreamConverters
         .fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .futureValue shouldEqual IOResult(3, Success(Done))
     }
 
@@ -90,7 +90,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
         .take(1) // stream is not completely read
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .futureValue
 
       f.status shouldEqual Success(Done)

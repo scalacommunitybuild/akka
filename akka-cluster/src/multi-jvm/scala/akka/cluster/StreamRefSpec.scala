@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -167,7 +167,7 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNode
         val ref = expectMsgType[ActorIdentity].ref.get
         ref ! RequestLogs(1337)
         val dataSourceRef = expectMsgType[LogsOffer].sourceRef
-        destinationForSource = dataSourceRef.runWith(TestSink.probe)
+        destinationForSource = dataSourceRef.runWith(TestSink())
         destinationForSource.request(3).expectNext("elem-1").expectNext("elem-2").expectNext("elem-3")
       }
       runOn(second) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
@@ -761,6 +761,44 @@ public class IntegrationDocTest extends AbstractJavaTest {
         source.map(x -> sourceQueue.offer(x)).runWith(Sink.ignore(), system);
 
         // #source-queue
+      }
+    };
+  }
+
+  @Test
+  public void illustrateSynchronousSourceQueue() throws Exception {
+    new TestKit(system) {
+      {
+        // #source-queue-synchronous
+        int bufferSize = 10;
+        int elementsToProcess = 5;
+
+        BoundedSourceQueue<Integer> sourceQueue =
+            Source.<Integer>queue(bufferSize)
+                .throttle(elementsToProcess, Duration.ofSeconds(3))
+                .map(x -> x * x)
+                .to(Sink.foreach(x -> System.out.println("got: " + x)))
+                .run(system);
+
+        List<Integer> fastElements = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        fastElements.stream()
+            .forEach(
+                x -> {
+                  QueueOfferResult result = sourceQueue.offer(x);
+                  if (result == QueueOfferResult.enqueued()) {
+                    System.out.println("enqueued " + x);
+                  } else if (result == QueueOfferResult.dropped()) {
+                    System.out.println("dropped " + x);
+                  } else if (result instanceof QueueOfferResult.Failure) {
+                    QueueOfferResult.Failure failure = (QueueOfferResult.Failure) result;
+                    System.out.println("Offer failed " + failure.cause().getMessage());
+                  } else if (result instanceof QueueOfferResult.QueueClosed$) {
+                    System.out.println("Bounded Source Queue closed");
+                  }
+                });
+
+        // #source-queue-synchronous
       }
     };
   }

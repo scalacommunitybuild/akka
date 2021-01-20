@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit.scaladsl
@@ -327,6 +327,16 @@ class SnapshotTestKit(system: ActorSystem)
   import SnapshotTestKit._
 
   override protected val storage: SnapshotStorage = SnapshotStorageEmulatorExtension(system)
+
+  override def getItem(persistenceId: String, nextInd: Int): Option[Any] = {
+    storage.firstInExpectNextQueue(persistenceId).map(reprToAny)
+  }
+
+  override def expectNextPersisted[A](persistenceId: String, event: A): A = {
+    val item = super.expectNextPersisted(persistenceId, event)
+    storage.removeFirstInExpectNextQueue(persistenceId)
+    item
+  }
 
   private val settings = Settings(system)
 

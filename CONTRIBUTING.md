@@ -169,6 +169,33 @@ akka-cluster/scalafmtAll
 akka-persistence/scalafmtAll
 ```
 
+To format the Java source code:
+```
+sbt
+project akka-actor
+javafmtAll
+```
+
+To keep the *import*s sorted with:
+
+```
+sbt
+project akka-actor
+sortImports
+```
+
+To verify code style with:
+```
+sbt 
+verifyCodeStyle
+```
+
+To apply code style with:
+```
+sbt
+applyCodeStyle
+```
+
 ### Do not use `-optimize` Scala compiler flag
 
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
@@ -430,6 +457,8 @@ not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
 PR validation includes checking that the Scala sources are formatted and will fail if they are not.
 
+It's recommended to run `sbt +sortImports` to keep the *import*s sorted.
+
 ### Java style
 
 Akka uses [the sbt Java Formatter plugin](https://github.com/sbt/sbt-java-formatter) to format Java sources.
@@ -574,7 +603,7 @@ Akka currently uses a combination of Jenkins and Travis for Continuous Integrati
 
 * Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
 * Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
-* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka)
+* Travis [checks dependency licenses for all PR's](https://travis-ci.com/github/akka/akka)
 
 The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
 

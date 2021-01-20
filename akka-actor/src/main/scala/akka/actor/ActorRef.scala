@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -18,6 +18,7 @@ import akka.event.AddressTerminatedTopic
 import akka.event.EventStream
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
+import akka.pattern.PromiseActorRef
 import akka.serialization.JavaSerializer
 import akka.serialization.Serialization
 import akka.util.OptionVal
@@ -214,12 +215,25 @@ private[akka] trait RepointableRef extends ActorRefScope {
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object InternalActorRef {
+  def isTemporaryRef(ref: ActorRef): Boolean =
+    ref match {
+      case i: InternalActorRef =>
+        (i.isLocal && i.isInstanceOf[PromiseActorRef]) ||
+        (!i.isLocal && i.path.elements.head == "temp")
+    }
+
+}
+
+/**
  * Internal trait for assembling all the functionality needed internally on
  * ActorRefs. NOTE THAT THIS IS NOT A STABLE EXTERNAL INTERFACE!
  *
  * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
-private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope =>
+@InternalApi private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope =>
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
@@ -385,7 +385,7 @@ private[stream] object ConnectionSourceStage {
         cause match {
           case _: SubscriptionWithCancelException.NonFailureCancellation =>
             log.debug(
-              "Not aborting connection from {}:{} because downstream cancelled stream without failure",
+              "Closing connection from {}:{} because downstream cancelled stream without failure",
               remoteAddress.getHostString,
               remoteAddress.getPort)
             closeConnectionDownstreamFinished()

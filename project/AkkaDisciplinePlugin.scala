@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -65,10 +65,10 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   lazy val silencerSettings = {
     val silencerVersion = "1.7.1"
-    Seq(
-      libraryDependencies ++= Seq(
-          compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
-          ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch)))
+    val libs = Seq(
+      compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
+      ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
+    Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
   }
 
   lazy val disciplineSettings =

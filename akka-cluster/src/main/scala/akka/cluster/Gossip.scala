@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -22,7 +22,7 @@ private[cluster] object Gossip {
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
   val empty: Gossip = new Gossip(Gossip.emptyMembers)
 
-  def apply(members: immutable.SortedSet[Member]) =
+  def apply(members: immutable.SortedSet[Member]): Gossip =
     if (members.isEmpty) empty else empty.copy(members = members)
 
   def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"

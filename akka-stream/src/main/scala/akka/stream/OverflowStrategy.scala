@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -114,6 +114,8 @@ object OverflowStrategy {
 
   /**
    * If the buffer is full when a new element arrives, drops the new element.
+   *
+   * Deprecated since 2.6.11. Use Source.queue instead.
    */
   def dropNew: OverflowStrategy = DropNew(Logging.DebugLevel)
 

@@ -63,7 +63,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  val defaultScalaOptions = "-Wconf:cat=unused-nowarn:s,any:e"
+  val defaultScalaOptions = "-Wconf:cat=unused-nowarn:s"
 
   lazy val nowarnSettings = {
     Dependencies.getScalaVersion() match {
@@ -85,10 +85,10 @@ object AkkaDisciplinePlugin extends AutoPlugin {
       case _ =>
         Seq(
           Compile / scalacOptions -= defaultScalaOptions,
-          Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+          Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s",
           Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
           Test / scalacOptions -= defaultScalaOptions,
-          Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+          Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s",
           Compile / doc / scalacOptions := Seq())
     }
   }

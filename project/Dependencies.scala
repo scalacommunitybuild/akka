@@ -7,6 +7,7 @@ package akka
 import sbt._
 import Keys._
 import scala.language.implicitConversions
+import dotty.tools.sbtplugin.DottyPlugin.autoImport.DottyCompatModuleID
 
 object Dependencies {
   import DependencyHelpers._
@@ -16,10 +17,10 @@ object Dependencies {
   val junitVersion = "4.13.1"
   val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.31.1"
+  val aeronVersion = "1.32.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.8.0"
+  val agronaVersion = "1.9.0"
   val nettyVersion = "3.10.6.Final"
   val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
@@ -27,33 +28,39 @@ object Dependencies {
   val jacksonVersion = "2.10.5"
   val jacksonDatabindVersion = "2.10.5.1"
 
-  val scala212Version = "2.12.11"
+  val scala212Version = "2.12.13"
   val scala213Version = "2.13.3"
+  val scala3Version = "3.0.0-M3"
 
   val reactiveStreamsVersion = "1.0.3"
 
   val sslConfigVersion = "0.4.2"
 
   val scalaTestVersion = "3.2.3"
+  val scalaTestScalaCheckVersion = "1-15"
   val scalaCheckVersion = "1.15.1"
+
+  def getScalaVersion() = {
+    // don't mandate patch not specified to allow builds to migrate
+    System.getProperty("akka.build.scalaVersion", "default") match {
+      case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
+      case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
+      case three if three.startsWith("3.0")              => scala3Version
+      case "default"                                     => scala212Version
+      case other =>
+        throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
+    }
+  }
 
   val Versions =
     Seq(
       crossScalaVersions := Seq(scala212Version, scala213Version),
-      scalaVersion := {
-        // don't allow full override to keep compatible with the version of silencer
-        // don't mandate patch not specified to allow builds to migrate
-        System.getProperty("akka.build.scalaVersion", "default") match {
-          case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
-          case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
-          case "default"                                     => crossScalaVersions.value.head
-          case other                                         => throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12 or 2.13.")
-        }
-      },
+      scalaVersion := getScalaVersion(),
       java8CompatVersion := {
         CrossVersion.partialVersion(scalaVersion.value) match {
           // java8-compat is only used in a couple of places for 2.13,
           // it is probably possible to remove the dependency if needed.
+          case Some((3, _))            => "0.9.0"
           case Some((2, n)) if n >= 13 => "0.9.0"
           case _                       => "0.8.0"
         }
@@ -81,21 +88,25 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
+    val sslConfigCore = DottyCompatModuleID("com.typesafe" %% "ssl-config-core" % sslConfigVersion)
+      .withDottyCompat(getScalaVersion()) // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = Def.setting { "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value } // Scala License
+    val java8Compat = Def.setting {
+      DottyCompatModuleID("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value)
+        .withDottyCompat(getScalaVersion())
+    } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
     // Added explicitly for when artery tcp is used
     val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
-    val asnOne = ("com.hierynomus" % "asn-one" % "0.4.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val asnOne = ("com.hierynomus" % "asn-one" % "0.5.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
@@ -122,14 +133,13 @@ object Dependencies {
       val logback = Compile.logback % "test" // EPL 1.0
 
       val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test" // ApacheV2
-      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
 
       // The 'scalaTestPlus' projects are independently versioned,
       // but the version of each module starts with the scalatest
       // version it was intended to work with
       val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-15" % (scalaTestVersion + ".0") % "test" // ApacheV2
+      val scalatestScalaCheck = "org.scalatestplus" %% s"scalacheck-${scalaTestScalaCheckVersion}" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestMockito = "org.scalatestplus" %% "mockito-3-4" % (scalaTestVersion + ".0") % "test" // ApacheV2
 
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
@@ -143,8 +153,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.16" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.16" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.17" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.17" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -202,7 +212,6 @@ object Dependencies {
         Test.scalatestScalaCheck,
         Test.commonsCodec,
         Test.commonsMath,
-        Test.scalacheck,
         Test.jimfs,
         Test.dockerClient,
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
@@ -302,20 +311,14 @@ object Dependencies {
 
   lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, Test.scalatest)
 
-  lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalacheck, Test.junit)
+  lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalatestScalaCheck, Test.junit)
 
-  lazy val streamTests = l ++= Seq(
-        Test.scalatest,
-        Test.scalacheck,
-        Test.scalatestScalaCheck,
-        Test.junit,
-        Test.commonsIo,
-        Test.jimfs)
+  lazy val streamTests = l ++= Seq(Test.scalatest, Test.scalatestScalaCheck, Test.junit, Test.commonsIo, Test.jimfs)
 
   lazy val streamTestsTck = l ++= Seq(
         Test.scalatest,
         Test.scalatestTestNG,
-        Test.scalacheck,
+        Test.scalatestScalaCheck,
         Test.junit,
         Test.reactiveStreamsTck)
 

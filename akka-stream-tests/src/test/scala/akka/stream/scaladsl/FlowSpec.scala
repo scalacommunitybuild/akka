@@ -11,12 +11,11 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import akka.NotUsed
-import akka.actor._
 import akka.stream._
 import akka.stream.impl._
 import akka.stream.testkit._
@@ -35,7 +34,7 @@ object FlowSpec {
 
 }
 
-@silent // tests type assignments compile
+@nowarn // tests type assignments compile
 class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 

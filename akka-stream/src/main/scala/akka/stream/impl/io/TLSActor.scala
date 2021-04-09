@@ -103,6 +103,7 @@ import akka.util.ByteString
           case n: NegotiateNewSession =>
             setNewSessionParameters(n)
             ByteString.empty
+          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
         }
         if (tracing) log.debug(s"chopping from new chunk of ${buffer.size} into $name (${b.position()})")
       } else {
@@ -368,10 +369,20 @@ import akka.util.ByteString
       log.debug(
         s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer
           .position()}")
+
     if (lastHandshakeStatus == FINISHED) handshakeFinished()
     runDelegatedTasks()
     result.getStatus match {
       case OK =>
+        // https://github.com/akka/akka/issues/29922
+        // It seems to be possible to get the SSLEngine into a state where
+        // result.getStatus == OK && getHandshakeStatus == NEED_WRAP but
+        // it doesn't make any progress any more.
+        //
+        // We guard against this JDK bug by checking for reasonable invariants after the call to engine.wrap
+        if (!(transportOutBuffer.position() > 0 || lastHandshakeStatus != NEED_WRAP))
+          throw new IllegalStateException("SSLEngine trying to loop NEED_WRAP without producing output")
+
         flushToTransport()
         userInChoppingBlock.putBack(userInBuffer)
       case CLOSED =>

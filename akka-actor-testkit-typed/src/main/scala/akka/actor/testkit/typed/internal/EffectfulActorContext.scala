@@ -91,8 +91,14 @@ import scala.reflect.ClassTag
     override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
       startTimer(key, msg, delay, Effect.TimerScheduled.FixedDelayMode)
 
+    override def startTimerWithFixedDelay(key: Any, msg: T, initialDelay: FiniteDuration, delay: FiniteDuration): Unit =
+      startTimer(key, msg, delay, Effect.TimerScheduled.FixedDelayModeWithInitialDelay(initialDelay))
+
     override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
       startTimer(key, msg, interval, Effect.TimerScheduled.FixedRateMode)
+
+    override def startTimerAtFixedRate(key: Any, msg: T, initialDelay: FiniteDuration, interval: FiniteDuration): Unit =
+      startTimer(key, msg, interval, Effect.TimerScheduled.FixedRateModeWithInitialDelay(initialDelay))
 
     override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
       startTimer(key, msg, interval, Effect.TimerScheduled.FixedRateMode)
@@ -100,7 +106,7 @@ import scala.reflect.ClassTag
     override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
       startTimer(key, msg, delay, Effect.TimerScheduled.SingleMode)
 
-    override def isTimerActive(key: Any): Boolean = ???
+    override def isTimerActive(key: Any): Boolean = activeTimers.isDefinedAt(key)
 
     override def cancel(key: Any): Unit = if (activeTimers.keySet(key)) {
       val effect = Effect.TimerCancelled(key)

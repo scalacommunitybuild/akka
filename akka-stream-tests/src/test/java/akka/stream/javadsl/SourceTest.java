@@ -36,6 +36,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -177,7 +178,6 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(6);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void mustBeAbleToUseGroupBy() throws Exception {
     final Iterable<String> input = Arrays.asList("Aaa", "Abb", "Bcc", "Cdd", "Cee");
@@ -195,22 +195,14 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<List<List<String>>> future =
         source.grouped(10).runWith(Sink.head(), system);
-    final Object[] result = future.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray();
-    Arrays.sort(
-        result,
-        (Comparator<Object>)
-            (Object)
-                new Comparator<List<String>>() {
-                  @Override
-                  public int compare(List<String> o1, List<String> o2) {
-                    return o1.get(0).charAt(0) - o2.get(0).charAt(0);
-                  }
-                });
+    final List<List<String>> result =
+        future.toCompletableFuture().get(1, TimeUnit.SECONDS).stream()
+            .sorted(Comparator.comparingInt(list -> list.get(0).charAt(0)))
+            .collect(Collectors.toList());
 
-    assertArrayEquals(
-        new Object[] {
-          Arrays.asList("Aaa", "Abb"), Arrays.asList("Bcc"), Arrays.asList("Cdd", "Cee")
-        },
+    assertEquals(
+        Arrays.asList(
+            Arrays.asList("Aaa", "Abb"), Arrays.asList("Bcc"), Arrays.asList("Cdd", "Cee")),
         result);
   }
 
@@ -636,9 +628,9 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseQueue() throws Exception {
-    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
-        Flow.of(String.class).runWith(Source.queue(2, OverflowStrategy.fail()), Sink.seq(), system);
-    final SourceQueueWithComplete<String> source = x.first();
+    final Pair<BoundedSourceQueue<String>, CompletionStage<List<String>>> x =
+        Flow.of(String.class).runWith(Source.queue(2), Sink.seq(), system);
+    final BoundedSourceQueue<String> source = x.first();
     final CompletionStage<List<String>> result = x.second();
     source.offer("hello");
     source.offer("world");
@@ -833,20 +825,19 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToCombineMat() throws Exception {
     final TestKit probe = new TestKit(system);
-    final Source<Integer, SourceQueueWithComplete<Integer>> source1 =
-        Source.queue(1, OverflowStrategy.dropNew());
+    final Source<Integer, BoundedSourceQueue<Integer>> source1 = Source.queue(2);
     final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
 
-    // compiler to check the correct materialized value of type = SourceQueueWithComplete<Integer>
+    // compiler to check the correct materialized value of type = BoundedSourceQueue<Integer>
     // available
-    final Source<Integer, SourceQueueWithComplete<Integer>> combined =
+    final Source<Integer, BoundedSourceQueue<Integer>> combined =
         Source.combineMat(
             source1,
             source2,
             width -> Concat.create(width),
             Keep.left()); // Keep.left() (i.e. preserve queueSource's materialized value)
 
-    SourceQueueWithComplete<Integer> queue =
+    BoundedSourceQueue<Integer> queue =
         combined
             .toMat(
                 Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), Keep.left())

@@ -109,7 +109,7 @@ import akka.stream.stage._
      * when this accidentally leaks onto threads that are not stopped when this
      * class should be unloaded.
      */
-    override def initialValue = new Array(1)
+    override def initialValue: Array[AnyRef] = new Array(1)
   }
 
   /**
@@ -454,6 +454,7 @@ import akka.stream.stage._
     eventsRemaining
   }
 
+  @InternalStableApi
   def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) => Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")

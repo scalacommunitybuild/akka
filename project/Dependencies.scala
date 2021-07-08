@@ -7,12 +7,12 @@ package akka
 import sbt._
 import Keys._
 import scala.language.implicitConversions
-import dotty.tools.sbtplugin.DottyPlugin.autoImport.DottyCompatModuleID
 
 object Dependencies {
   import DependencyHelpers._
 
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
+    .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
 
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.30"
@@ -27,9 +27,9 @@ object Dependencies {
 
   val jacksonVersion = "2.11.4"
 
-  val scala212Version = "2.12.13"
+  val scala212Version = "2.12.14"
   val scala213Version = "2.13.5"
-  val scala3Version = "3.0.0-RC1"
+  val scala3Version = "3.0.1-RC1"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -81,14 +81,13 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "3.2.0" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.3.0" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = DottyCompatModuleID("com.typesafe" %% "ssl-config-core" % sslConfigVersion)
-      .withDottyCompat(getScalaVersion()) // ApacheV2
+    val sslConfigCore = ("com.typesafe" %% "ssl-config-core" % sslConfigVersion).cross(CrossVersion.for3Use2_13) // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
@@ -96,8 +95,7 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {
-      DottyCompatModuleID("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value)
-        .withDottyCompat(getScalaVersion())
+      ("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value).cross(CrossVersion.for3Use2_13)
     } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
@@ -121,7 +119,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.6" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.7" % "test"
     }
 
     object Test {
@@ -152,8 +150,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.17" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.17" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.21" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.21" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

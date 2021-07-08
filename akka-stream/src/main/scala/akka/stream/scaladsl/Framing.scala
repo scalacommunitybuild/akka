@@ -83,6 +83,7 @@ object Framing {
    *                           For example, frame can have a shape like this: `[offset bytes][body size bytes][body bytes][footer bytes]`.
    *                           Then computeFrameSize can be used to compute the frame size: `(offset bytes, computed size) => (actual frame size)`.
    *                           ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the operator fails otherwise.
+   *                           Must not mutate the given byte array.
    *
    */
   def lengthField(
@@ -264,27 +265,27 @@ object Framing {
                 s"Read ${possibleMatchPos - previous} bytes " +
                 s"which is more than $maximumLineBytes without seeing a line terminator"))
           } else if (possibleMatchPos == -1) {
-            if (buffer.size - previous > maximumLineBytes)
+            if (buffer.length - previous > maximumLineBytes)
               failStage(
                 new FramingException(
-                  s"Read ${buffer.size - previous} bytes " +
+                  s"Read ${buffer.length - previous} bytes " +
                   s"which is more than $maximumLineBytes without seeing a line terminator"))
             else {
               // No matching character, we need to accumulate more bytes into the buffer
-              nextPossibleMatch = buffer.size
+              nextPossibleMatch = buffer.length
               doParse()
             }
-          } else if (possibleMatchPos + separatorBytes.size > buffer.size) {
+          } else if (possibleMatchPos + separatorBytes.length > buffer.length) {
             // We have found a possible match (we found the first character of the terminator
             // sequence) but we don't have yet enough bytes. We remember the position to
             // retry from next time.
             nextPossibleMatch = possibleMatchPos
             doParse()
-          } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
+          } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.length) == separatorBytes) {
             // Found a match, mark start and end position and iterate if possible
             indices += (previous -> possibleMatchPos)
-            nextPossibleMatch = possibleMatchPos + separatorBytes.size
-            if (nextPossibleMatch == buffer.size || indices.isFull) {
+            nextPossibleMatch = possibleMatchPos + separatorBytes.length
+            if (nextPossibleMatch == buffer.length || indices.isFull) {
               doParse()
             } else {
               searchIndices()
@@ -415,7 +416,7 @@ object Framing {
           } else if (buffSize >= minimumChunkSize) {
             val parsedLength = intDecoder(buffer.iterator.drop(lengthFieldOffset), lengthFieldLength)
             frameSize = computeFrameSize match {
-              case Some(f) => f(buffer.take(lengthFieldOffset).toArray, parsedLength)
+              case Some(f) => f(buffer.take(lengthFieldOffset).toArrayUnsafe(), parsedLength)
               case None    => parsedLength + minimumChunkSize
             }
             if (frameSize > maximumFrameLength) {

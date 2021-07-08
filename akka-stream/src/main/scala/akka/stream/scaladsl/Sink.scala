@@ -139,7 +139,7 @@ object Sink {
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
       case s: Sink[T, M]                                       => s
-      case s: javadsl.Sink[T, M]                               => s.asScala
+      case s: javadsl.Sink[T, M] @unchecked                    => s.asScala
       case g: GraphStageWithMaterializedValue[SinkShape[T], M] =>
         // move these from the stage itself to make the returned source
         // behave as it is the stage with regards to attributes
@@ -159,7 +159,13 @@ object Sink {
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
   def fromMaterializer[T, M](factory: (Materializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage(factory))
+    Flow
+      .fromMaterializer({ (mat, attr) =>
+        Flow.fromGraph(GraphDSL.createGraph(factory(mat, attr)) { b => sink =>
+          FlowShape(sink.in, b.materializedValue.outlet)
+        })
+      })
+      .to(Sink.head)
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
@@ -168,8 +174,9 @@ object Sink {
    */
   @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage((materializer, attributes) =>
-      factory(ActorMaterializerHelper.downcast(materializer), attributes)))
+    fromMaterializer { (mat, attr) =>
+      factory(ActorMaterializerHelper.downcast(mat), attr)
+    }
 
   /**
    * Helper to create [[Sink]] from `Subscriber`.
@@ -572,7 +579,7 @@ object Sink {
       onInitMessage: Any,
       ackMessage: Any,
       onCompleteMessage: Any,
-      onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
+      onFailureMessage: (Throwable) => Any = Status.Failure.apply): Sink[T, NotUsed] =
     actorRefWithAck(ref, _ => identity, _ => onInitMessage, Some(ackMessage), onCompleteMessage, onFailureMessage)
 
   /**

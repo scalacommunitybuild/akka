@@ -74,11 +74,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
       val info = ConnectionInfo(registration, handler, keepOpenOnPeerClosed, useResumeWriting)
 
-      // if we are in push mode or already have resumed reading in pullMode while waiting for Register
-      // then register OP_READ interest
-      if (!pullMode || (/*pullMode && */ !readingSuspended)) resumeReading(info)
       context.setReceiveTimeout(Duration.Undefined)
       context.become(connected(info))
+
+      // if we are in push mode or already have resumed reading in pullMode while waiting for Register
+      // then register OP_READ interest
+      if (!pullMode || (/*pullMode && */ !readingSuspended)) resumeReading(info, None)
 
     case ResumeReading =>
       readingSuspended = false
@@ -101,7 +102,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def connected(info: ConnectionInfo): Receive =
     handleWriteMessages(info).orElse {
       case SuspendReading    => suspendReading(info)
-      case ResumeReading     => resumeReading(info)
+      case ResumeReading     => resumeReading(info, None)
       case ChannelReadable   => doRead(info, None)
       case cmd: CloseCommand => handleClose(info, Some(sender()), cmd.event)
     }
@@ -119,7 +120,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       closeCommander: Option[ActorRef],
       closedEvent: ConnectionClosed): Receive = {
     case SuspendReading  => suspendReading(info)
-    case ResumeReading   => resumeReading(info)
+    case ResumeReading   => resumeReading(info, closeCommander)
     case ChannelReadable => doRead(info, closeCommander)
 
     case ChannelWritable =>
@@ -141,7 +142,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** connection is closed on our side and we're waiting from confirmation from the other side */
   def closing(info: ConnectionInfo, closeCommander: Option[ActorRef]): Receive = {
     case SuspendReading  => suspendReading(info)
-    case ResumeReading   => resumeReading(info)
+    case ResumeReading   => resumeReading(info, closeCommander)
     case ChannelReadable => doRead(info, closeCommander)
     case Close           => doCloseConnection(info.handler, closeCommander, Close.event)
     case Abort           => handleClose(info, Some(sender()), Aborted)
@@ -240,9 +241,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     readingSuspended = true
     info.registration.disableInterest(OP_READ)
   }
-  def resumeReading(info: ConnectionInfo): Unit = {
+  def resumeReading(info: ConnectionInfo, closeCommander: Option[ActorRef]): Unit = {
     readingSuspended = false
-    info.registration.enableInterest(OP_READ)
+    doRead(info, closeCommander)
   }
 
   /**
@@ -267,8 +268,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           readBytes match {
             case `maxBufferSpace` =>
               if (pullMode) MoreDataWaiting else innerRead(buffer, remainingLimit - maxBufferSpace)
-            case x if x >= 0 => AllRead
-            case -1          => EndOfStream
+            case x if x >= 0 =>
+              if (!pullMode || x == 0)
+                // if (pullMode) we reach here by probing from resumeReading,
+                // otherwise we have just exhausted the network receive buffer.
+                // In any case, we now want to be notified about more data being available
+                info.registration.enableInterest(OP_READ)
+
+              AllRead
+            case -1 => EndOfStream
             case _ =>
               throw new IllegalStateException("Unexpected value returned from read: " + readBytes)
           }
@@ -276,8 +284,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
       val buffer = bufferPool.acquire()
       try innerRead(buffer, ReceivedMessageSizeLimit) match {
-        case AllRead =>
-          if (!pullMode) info.registration.enableInterest(OP_READ)
+        case AllRead => // nothing to do
         case MoreDataWaiting =>
           if (!pullMode) self ! ChannelReadable
         case EndOfStream if channel.socket.isOutputShutdown =>

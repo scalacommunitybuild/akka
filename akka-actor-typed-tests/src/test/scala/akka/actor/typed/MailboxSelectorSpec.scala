@@ -51,13 +51,13 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
   "The Mailbox selectors" must {
     "default to unbounded" in {
       val actor = spawn(behavior)
-      val mailbox = actor.ask(WhatsYourMailbox).futureValue
+      val mailbox = actor.ask(WhatsYourMailbox.apply).futureValue
       mailbox shouldBe a[UnboundedMessageQueueSemantics]
     }
 
     "select a bounded mailbox" in {
       val actor = spawn(behavior, MailboxSelector.bounded(3))
-      val mailbox = actor.ask(WhatsYourMailbox).futureValue
+      val mailbox = actor.ask(WhatsYourMailbox.apply).futureValue
       mailbox shouldBe a[BoundedMessageQueueSemantics]
       // capacity is private so only way to test is to fill mailbox
     }
@@ -74,7 +74,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
       }, MailboxSelector.bounded(2))
       actor ! "one" // actor will block here
       actor ! "two"
-      LoggingTestKit.deadLetters().expect {
+      LoggingTestKit.deadLetters().withCheckExcess(false).expect {
         // one or both of these doesn't fit in mailbox
         // depending on race with how fast actor consumes
         actor ! "three"
@@ -85,7 +85,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
 
     "select an arbitrary mailbox from config" in {
       val actor = spawn(behavior, MailboxSelector.fromConfig("specific-mailbox"))
-      val mailbox = actor.ask(WhatsYourMailbox).futureValue
+      val mailbox = actor.ask(WhatsYourMailbox.apply).futureValue
       mailbox shouldBe a[BoundedMessageQueueSemantics]
       mailbox.asInstanceOf[BoundedNodeMessageQueue].capacity should ===(4)
 

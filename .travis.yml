@@ -4,6 +4,9 @@ language: scala
 
 sudo: false
 
+## The versions of scala specified here are only used as `-Dakka.build.scalaVersion=...`
+## which ignores the PATCH portion of the version id. These scala version don't need
+## to align with the version used in the build.
 scala:
   - "2.12.11"
   - "2.13.3"
@@ -28,24 +31,18 @@ cache:
     - $HOME/.jabba/jdk
 
 # script for the default 'test' stage:
-script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
+script: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
 
 jobs:
   include:
     - stage: whitesource
       name: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
-    - stage: scala3
-      name: scala3
-      # separate job since only a few modules compile with Scala 3 yet
-      script: jabba install adopt@1.11-0 && jabba use adopt@1.11-0 && sbt -Dakka.build.scalaVersion=3.0 "akka-actor-tests/test:compile" akka-actor-typed/compile akka-stream/compile
 
 stages:
   - name: whitesource
     if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v)
   - name: test
-    if: type == pull_request OR NOT tag =~ ^v
-  - name: scala3
     if: type == pull_request OR NOT tag =~ ^v
 
 env:

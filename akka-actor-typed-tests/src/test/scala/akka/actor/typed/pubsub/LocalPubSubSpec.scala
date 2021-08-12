@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.testkit.GHExcludeTest
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -17,9 +18,10 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
 
   "A pub-sub topic running locally" must {
 
-    "publish to all local subscriber actors of a topic" in {
+    // Excluded in GH Actions: https://github.com/akka/akka/issues/30466
+    "publish to all local subscriber actors of a topic" taggedAs GHExcludeTest in {
       val fruitTopic =
-        LoggingTestKit.debug("Topic list updated").expect {
+        LoggingTestKit.debug("Topic list updated").withCheckExcess(false).expect {
           testKit.spawn(Topic[String]("fruit"))
         }
 
@@ -36,7 +38,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         val statsProbe = testKit.createTestProbe[TopicImpl.TopicStats]()
         statsProbe.awaitAssert {
           fruitTopic ! TopicImpl.GetTopicStats(statsProbe.ref)
-          statsProbe.receiveMessage().localSubscriberCount should ===(3)
+          val stats = statsProbe.receiveMessage()
+          stats.localSubscriberCount should ===(3)
+          stats.topicInstanceCount should ===(1)
         }
 
         fruitTopic ! Topic.Publish("banana")
@@ -50,9 +54,10 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     }
 
     "publish to all subscriber actors across several instances of the same topic" in {
-      val (fruitTopic1, fruitTopic2) = LoggingTestKit.debug("Topic list updated").withOccurrences(2).expect {
-        (testKit.spawn(Topic[String]("fruit")), testKit.spawn(Topic[String]("fruit")))
-      }
+      val (fruitTopic1, fruitTopic2) =
+        LoggingTestKit.debug("Topic list updated").withOccurrences(2).withCheckExcess(false).expect {
+          (testKit.spawn(Topic[String]("fruit")), testKit.spawn(Topic[String]("fruit")))
+        }
 
       try {
         val probe1 = testKit.createTestProbe[String]()
@@ -126,7 +131,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
 
     "doesn't publish after unsubscribe" in {
       val fruitTopic =
-        LoggingTestKit.debug("Topic list updated").expect {
+        LoggingTestKit.debug("Topic list updated").withCheckExcess(false).expect {
           testKit.spawn(Topic[String]("fruit"))
         }
 

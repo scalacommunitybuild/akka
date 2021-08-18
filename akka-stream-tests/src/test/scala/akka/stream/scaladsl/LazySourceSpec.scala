@@ -75,13 +75,16 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val constructed = new AtomicBoolean(false)
-      Source
-        .lazySingle { () =>
+      val termination = Source
+        .lazyFuture { () =>
           constructed.set(true)
-          1
+          Future.successful(1)
         }
-        .runWith(Sink.cancelled)
+        .watchTermination()(Keep.right)
+        .toMat(Sink.cancelled)(Keep.left)
+        .run()
 
+      termination.futureValue // stream should terminate
       constructed.get() should ===(false)
     }
 
@@ -124,15 +127,17 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      val (lazySourceMatVal, termination) = Source
         .lazySource { () =>
           constructed.set(true); Source(List(1, 2, 3))
         }
+        .watchTermination()(Keep.both)
         .toMat(Sink.cancelled)(Keep.left)
         .run()
 
+      termination.futureValue // stream should terminate
       constructed.get() should ===(false)
-      result.isCompleted should ===(false)
+      lazySourceMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
@@ -251,7 +256,8 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         .to(Sink.ignore)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 
@@ -270,18 +276,20 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val constructed = new AtomicBoolean(false)
-      val result = Source
+      val (lazyFutureSourceMatval, termination) = Source
         .lazyFutureSource { () =>
           Future {
             constructed.set(true)
             Source(List(1, 2, 3))
           };
         }
+        .watchTermination()(Keep.both)
         .toMat(Sink.cancelled)(Keep.left)
         .run()
 
+      termination.futureValue // stream should terminate
       constructed.get() should ===(false)
-      result.isCompleted should ===(false)
+      lazyFutureSourceMatval.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
     "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
@@ -427,7 +435,8 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         .to(Sink.ignore)
         .run()
 
-      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+      val attribute = attributes.futureValue.get[MyAttribute]
+      attribute shouldBe Some(MyAttribute())
     }
   }
 

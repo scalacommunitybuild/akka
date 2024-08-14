@@ -136,15 +136,15 @@ object AkkaBuild {
           Seq("-target:jvm-1.8")
         else
           if (scalaBinaryVersion.value == "2.11")
-            Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
+            Seq("-target:jvm-1.8", "-javabootclasspath", fullJavaHomes.value("8") + "/jre/lib/rt.jar")
           else
             // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-            Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+            Seq("-release", "8", "-javabootclasspath", fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
-      javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
+      javacOptions in compile ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(fullJavaHomes.value("8")),
+      javacOptions in test ++= DefaultJavacOptions ++ JavaVersion.sourceAndTarget(fullJavaHomes.value("8")),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 

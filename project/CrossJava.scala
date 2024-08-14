@@ -55,7 +55,6 @@ object CrossJava {
   object Keys {
     val discoveredJavaHomes = settingKey[Map[String, File]]("Discovered Java home directories")
     val javaHomes = settingKey[Map[String, File]]("The user-defined additional Java home directories")
-    val fullJavaHomes = settingKey[Map[String, File]]("Combines discoveredJavaHomes and custom javaHomes.")
   }
 
   import Keys._
@@ -63,8 +62,7 @@ object CrossJava {
   val crossJavaSettings = Seq(
     discoveredJavaHomes := CrossJava.discoverJavaHomes,
     javaHomes := ListMap.empty,
-    fullJavaHomes := CrossJava.expandJavaHomes(discoveredJavaHomes.value ++ javaHomes.value))
-
+  )
   // parses jabaa style version number adopt@1.8
   def parseJavaVersion(version: String): JavaVersion = {
     def splitDot(s: String): Vector[Long] =

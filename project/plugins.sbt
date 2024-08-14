@@ -27,3 +27,5 @@ addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.21")
 
 // used for @unidoc directive
 libraryDependencies += "io.github.classgraph" % "classgraph" % "4.4.12"
+
+libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
